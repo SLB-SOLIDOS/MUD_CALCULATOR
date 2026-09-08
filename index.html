@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mud Engineering Calculator | SLB Sólidos</title>
+<meta name="description" content="Calculadora profesional de Ingeniería de Lodos de Perforación - 12 módulos esenciales">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<!-- jsPDF para exportación PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<!-- Fondo decorativo -->
+<div class="bg-orbs">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+
+<!-- HEADER -->
+<header class="header glass">
+  <div class="header-left">
+    <button id="btnMenu" class="btn-icon" aria-label="Menú">☰</button>
+    <div class="logo">
+      <span class="logo-icon">🛢️</span>
+      <div>
+        <h1>MUD<span>CALC</span></h1>
+        <p>Engineering Calculator v1.0</p>
+      </div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="unit-toggle">
+      <span>Sistema:</span>
+      <button id="btnImperial" class="unit-btn active">Imperial</button>
+      <button id="btnMetric" class="unit-btn">Métrico</button>
+    </div>
+    <button id="btnTheme" class="btn-icon" title="Cambiar tema">🌙</button>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <nav id="sidebar" class="sidebar glass">
+    <div class="sidebar-head">
+      <strong>Navegación</strong>
+      <button id="btnClose" class="btn-icon">✕</button>
+    </div>
+    <ul class="nav-list">
+      <li><a href="#" data-view="dashboard" class="nav-link active">🏠 Dashboard</a></li>
+      <li class="nav-sep">CALCULADORAS</li>
+      <li><a href="#" data-view="pipe-cap" class="nav-link">1️⃣ Capacidad de Tubería</a></li>
+      <li><a href="#" data-view="annular-cap" class="nav-link">2️⃣ Capacidad Anular</a></li>
+      <li><a href="#" data-view="pipe-annular-vol" class="nav-link">3️⃣ Volumen Tubería + Anular</a></li>
+      <li><a href="#" data-view="tank-vol" class="nav-link">4️⃣ Tanque Rectangular</a></li>
+      <li><a href="#" data-view="pump-output" class="nav-link">5️⃣ Cálculo de Bombas</a></li>
+      <li><a href="#" data-view="tfa" class="nav-link">6️⃣ TFA - Toberas</a></li>
+      <li><a href="#" data-view="annular-vel" class="nav-link">7️⃣ Velocidad Anular</a></li>
+      <li><a href="#" data-view="brine-density" class="nav-link">8️⃣ Densidad de Salmuera</a></li>
+      <li><a href="#" data-view="sg-visc" class="nav-link">9️⃣ SG & Viscosidad</a></li>
+      <li><a href="#" data-view="mud-weight" class="nav-link">🔟 Ajuste Peso de Lodo</a></li>
+      <li><a href="#" data-view="hydrostatic" class="nav-link">1️⃣1️⃣ Presión Hidrostática</a></li>
+      <li><a href="#" data-view="ecd" class="nav-link">1️⃣2️⃣ ECD</a></li>
+      <li class="nav-sep">HERRAMIENTAS</li>
+      <li><a href="#" data-view="converter" class="nav-link">🔄 Conversor de Unidades</a></li>
+      <li><a href="#" data-view="history" class="nav-link">📜 Historial <span id="historyBadge" class="badge">0</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <p>SLB Sólidos • Mud Engineering</p>
+      <small>Precisión IADC / SPE</small>
+    </div>
+  </nav>
+  <div id="overlay" class="overlay"></div>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- DASHBOARD -->
+    <section id="view-dashboard" class="view active">
+      <div class="hero glass">
+        <div class="hero-text">
+          <h2>🛢️ Mud Engineering Calculator</h2>
+          <p>Herramienta profesional para Ingenieros de Lodos, Supervisores de Fluidos y Técnicos de Laboratorio. 12 calculadoras esenciales, conversión instantánea Imperial ↔ Métrico, historial persistente y reportes PDF.</p>
+          <div class="hero-actions">
+            <button class="btn btn-primary" onclick="navigate('hydrostatic')">Probar Presión Hidrostática →</button>
+            <button class="btn btn-ghost" onclick="navigate('converter')">Abrir Conversor</button>
+          </div>
+        </div>
+        <div class="hero-card glass">
+          <h4>⚡ Acceso rápido</h4>
+          <div class="quick-grid">
+            <button class="quick-btn" onclick="navigate('pipe-cap')">Capacidad Tubería</button>
+            <button class="quick-btn" onclick="navigate('pump-output')">Bombas</button>
+            <button class="quick-btn" onclick="navigate('hydrostatic')">Hidrostática</button>
+            <button class="quick-btn" onclick="navigate('ecd')">ECD</button>
+            <button class="quick-btn" onclick="navigate('mud-weight')">Peso Lodo</button>
+            <button class="quick-btn" onclick="navigate('annular-vel')">Vel. Anular</button>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="section-title">Módulos de Cálculo</h3>
+      <div class="cards-grid">
+        <div class="card glass" onclick="navigate('pipe-cap')"><span>🔩</span><h4>Capacidad Tubería</h4><p>Volumen interior bbls, gal, L, m³</p></div>
+        <div class="card glass" onclick="navigate('annular-cap')"><span>⭕</span><h4>Capacidad Anular</h4><p>Espacio entre tubería y pozo</p></div>
+        <div class="card glass" onclick="navigate('pipe-annular-vol')"><span>🔗</span><h4>Volumen Combinado</h4><p>Tubería + Anular total</p></div>
+        <div class="card glass" onclick="navigate('tank-vol')"><span>🟦</span><h4>Tanque Rectangular</h4><p>L×W×H volumen</p></div>
+        <div class="card glass" onclick="navigate('pump-output')"><span>⚙️</span><h4>Bombas Triplex/Dúplex</h4><p>GAL/STK, L/STK, bbl/min</p></div>
+        <div class="card glass" onclick="navigate('tfa')"><span>🎯</span><h4>TFA Toberas</h4><p>Área total de flujo</p></div>
+        <div class="card glass" onclick="navigate('annular-vel')"><span>💨</span><h4>Velocidad Anular</h4><p>ft/min, m/min</p></div>
+        <div class="card glass" onclick="navigate('brine-density')"><span>🧂</span><h4>Densidad Salmuera</h4><p>NaCl / CaCl₂ / KCl</p></div>
+        <div class="card glass" onclick="navigate('sg-visc')"><span>🧪</span><h4>SG & Viscosidad</h4><p>Gravedad y viscosidad</p></div>
+        <div class="card glass" onclick="navigate('mud-weight')"><span>⚖️</span><h4>Ajuste Peso Lodo</h4><p>Barita / Dilución</p></div>
+        <div class="card glass" onclick="navigate('hydrostatic')"><span>🏔️</span><h4>Presión Hidrostática</h4><p>P = MW × 0.052 × TVD</p></div>
+        <div class="card glass" onclick="navigate('ecd')"><span>🌀</span><h4>ECD</h4><p>Densidad equivalente circulando</p></div>
+      </div>
+      <div class="info-strip glass">
+        <span>📏 Unidades globales: Imperial ↔ Métrico</span>
+        <span>💾 Historial en localStorage</span>
+        <span>📄 Exportación PDF profesional</span>
+        <span>📱 100% Responsive</span>
+      </div>
+    </section>
+
+    <!-- 1 - PIPE CAPACITY -->
+    <section id="view-pipe-cap" class="view">
+      <div class="calc-header glass">
+        <h2>1. Capacidad de Tubería <small>Pipe Capacity</small></h2>
+        <p>Volumen interior de tubería. Fórmula imperial: <code>Cap (bbl/ft) = ID² / 1029.4</code></p>
+      </div>
+      <div class="calc-grid">
+        <div class="panel glass">
+          <div class="field"><label>Diámetro Interno (ID)</label><div class="input-row"><input id="pc-id" type="number" placeholder="Ej. 4.276" step="any"><select id="pc-id-u"><option value="in">pulg (in)</option><option value="mm">mm</option></select></div></div>
+          <div class="field"><label>Longitud</label><div class="input-row"><input id="pc-len" type="number" placeholder="Ej. 10000" step="any"><select id="pc-len-u"><option value="ft">ft</option><option value="m">m</option></select></div></div>
+          <div class="field"><label>Unidad de salida volumen</label><select id="pc-out"><option value="bbl">bbl</option><option value="gal">galones</option><option value="L">Litros</option><option value="m3">m³</option><option value="ft3">ft³</option></select></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="calcPipeCap()">Calcular</button>
+            <button class="btn btn-ghost" onclick="fillExample('pipe-cap')">Cargar ejemplo</button>
+            <button class="btn btn-ghost" onclick="exportPDF('pipe-cap')">📄 PDF</button>
+          </div>
+        </div>
+        <div class="result-panel glass" id="res-pipe-cap">
+          <div class="result-empty">Ingresa datos y presiona Calcular</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 - ANNULAR CAPACITY -->
+    <section id="view-annular-cap" class="view">
+      <div class="calc-header glass">
+        <h2>2. Capacidad Anular <small>Annular Capacity</small></h2>
+        <p><code>Cap Anular (bbl/ft) = (Dh² - Dp²) / 1029.4</code> — Dh: diámetro hoyo, Dp: diámetro exterior tubería</p>
+      </div>
+      <div class="calc-grid">
+        <div class="panel glass">
+          <div class="field"><label>Diámetro del Hoyo (Dh)</label><div class="input-row"><input id="ac-dh" type="number" placeholder="Ej. 12.25" step="any"><select id="ac-dh-u"><option value="in">in</option><option value="mm">mm</option></select></div></div>
+          <div class="field"><label>Diámetro Exterior Tubería (Dp)</label><div class="input-row"><input id="ac-dp" type="number" placeholder="Ej. 5" step="any"><select id="ac-dp-u"><option value="in">in</option><option value="mm">mm</option></select></div></div>
+          <div class="field"><label>Longitud</label><div class="input-row"><input id="ac-len" type="number" placeholder="Ej. 5000" step="any"><select id="ac-len-u"><option value="ft">ft</option><option value="m">m</option></select></div></div>
+          <div class="field"><label>Volumen salida</label><select id="ac-out"><option value="bbl">bbl</option><option value="gal">gal</option><option value="L">Litros</option><option value="m3">m³</option></select></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="calcAnnularCap()">Calcular</button>
+            <button class="btn btn-ghost" onclick="fillExample('annular-cap')">Ejemplo</button>
+            <button class="btn btn-ghost" onclick="exportPDF('annular-cap')">📄 PDF</button>
+          </div>
+        </div>
+        <div class="result-panel glass" id="res-annular-cap"><div class="result-empty">Ingresa datos y presiona Calcular</div></div>
+      </div>
+    </section>
+
+    <!-- 3 - PIPE & ANNULAR VOLUME -->
+    <section id="view-pipe-annular-vol" class="view">
+      <div class="calc-header glass">
+        <h2>3. Volumen Tubería + Anular <small>Pipe & Annular Volume</small></h2>
+        <p>Suma de volumen interior y anular para una sarta completa.</p>
+      </div>
+      <div class="calc-grid">
+        <div class="panel glass">
+          <div class="field"><label>ID Tubería</label><div class="input-row"><input id="pav-id" type="number" placeholder="4.276" step="any"><select id="pav-id-u"><option value="in">in</option><option value="mm">mm</option></select></div></div>
+          <div class="field"><label>OD Tubería</label><div class="input-row"><input id="pav-od" type="number" placeholder="5" step="any"><select id="pav-od-u"><option value="in">in</option><option value="mm">mm</option></select></div></div>
+          <div class="field"><label>Diámetro Hoyo</label><div class="input-row"><input id="pav-dh" type="number" placeholder="12.25" step="any"><select id="pav-dh-u"><option value="in">in</option><option value="mm">mm</option></select></div></div>
+          <div class="field"><label>Longitud</label><div class="input-row"><input id="pav-len" type="number" placeholder="10000" step="any"><select id="pav-len-u"><option value="ft">ft</option><option value="m">m</option></select></div></div>
+          <div class="field"><label>Salida</label><select id="pav-out"><option value="bbl">bbl</option><option value="m3">m³</option><option value="gal">gal</option></select></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="calcPipeAnnularVol()">Calcular</button>
+            <button class="btn btn-ghost" onclick="fillExample('pipe-annular-vol')">Ejemplo</button>
+            <button class="btn btn-ghost" onclick="exportPDF('pipe-annular-vol')">📄 PDF</button>
+          </div>
+        </div>
+        <div class="result-panel glass" id="res-pipe-annular-vol"><div class="result-empty">Ingresa datos y presiona Calcular</div></div>
+      </div>
+    </section>
+
+    <!-- 4 - TANK VOLUME -->
+    <section id="view-tank-vol" class="view">
+      <div class="calc-header glass">
+        <h2>4. Volumen de Tanque Rectangular <small>Rectangular Tank</small></h2>
+        <p><code>V = L × W × H</code> — con corrección por nivel actual</p>
+      </div>
+      <div class="calc-grid">
+        <div class="panel glass">
+          <div class="field"><label>Longitud</label><div class="input-row"><input id="tk-l" type="number" placeholder="Ej. 10" step="any"><select id="tk-l-u"><option value="ft">ft</option><option value="m">m</option></select></div></div>
+          <div class="field"><label>Ancho</label><div class="input-row"><input id="tk-w" type="number" placeholder="Ej. 8" step="any"><select id="tk-w-u"><option value="ft">ft</option><option value="m">m</option></select></div></div>
+          <div class="field"><label>Altura total</label><div class="input-row"><input id="tk-h" type="number" placeholder="Ej. 5" step="any"><select id="tk-h-u"><option value="ft">ft</option><option value="m">m</option></select></div></div>
+          <div class="field"><label>Nivel de fluido (opcional, deja vacío para lleno)</label><div class="input-row"><input id="tk-level" type="number" placeholder="Ej. 3" step="any"><select id="tk-lv-u"><option value="ft">ft</option><option value="m">m</option><option value="%">%</option></select></div></div>
+          <div class="field"><label>Salida</label><select id="tk-out"><option value="bbl">bbl</option><option value="gal">gal</option><option value="m3">m³</option><option value="L">Litros</option></select></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="calcTankVol()">Calcular</button>
+            <button class="btn btn-ghost" onclick="fillExample('tank-vol')">Ejemplo</button>
+            <button class="btn btn-ghost" onclick="exportPDF('tank-vol')">📄 PDF</button>
+          </div>
+        </div>
+        <div class="result-panel glass" id="res-tank-vol"><div class="result-empty">Ingresa datos y presiona Calcular</div></div>
+      </div>
+    </section>
+
+    <!-- 5 - PUMP OUTPUT -->
+    <section id="view-pump-output" class="view">
+      <div class="calc-header glass">
+        <h2>5. Cálculo de Bombas <small>Pump Output</small></h2>
+        <p>Triplex: <code>0.000162 × D² × S × Eff</code> &nbsp;|&nbsp; Dúplex: <code>0.000162 × (2D² - d²) × S × Eff</code> (bbl/stk)</p>
+      </div>
+      <div class="calc-grid">
+        <div class="panel glass">
+          <div class="field"><label>Tipo de Bomba</label><select id="pump-type" onchange="togglePumpType()"><option value="triplex">Triplex</option><option value="duplex">Dúplex</option></select></div>
+          <div class="field"><label>Diámetro Camisa (Liner D)</label><div class="input-row"><input id="pump-d" type="number" placeholder="Ej. 6" step="any"><select id="pump-d-u"><option value="in">in</option><option value="mm">mm</option></select></div></div>
+          <div class="field" id="field-rod" style="display:none"><label>Diámetro Vástago (Rod d) - solo Dúplex</label><div class="input-row"><input id="pump-rod" type="number" placeholder="Ej. 2" step="any"><select id="pump-rod-u"><option value="in">in</option><option value="mm">mm</option></select></div></div>
+          <div class="field"><label>Carrera (Stroke S)</label><div class="input-row"><input id="pump-s" type="number" placeholder="Ej. 11" step="any"><select id="pump-s-u"><option value="in">in</option><option value="mm">mm</option></select></div></div>
+          <div class="field"><label>Eficiencia (%)</label><input id="pump-eff" type="number" value="97" step="any" min="50" max="100"></div>
+          <div class="field"><label>Emboladas por minuto (SPM)</label><input id="pump-spm" type="number" placeholder="Ej. 60 para caudal" step="any"></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="calcPump()">Calcular</button>
+            <button class="btn btn-ghost" onclick="fillExample('pump-output')">Ejemplo</button>
+            <button class="btn btn-ghost" onclick="exportPDF('pump-output')">📄 PDF</button>
+          </div>
+        </div>
+        <div class="result-panel glass" id="res-pump-output"><div class="result-empty">Ingresa datos y presiona Calcular</div></div>
+      </div>
+    </section>
+
+    <!-- 6 - TFA -->
+    <section id="view-tfa" class="view">
+      <div class="calc-header glass">
+        <h2>6. Área Total de Flujo Toberas <small>Nozzle TFA</small></h2>
+        <p><code>TFA = Σ (d²) / 1303.8</code> in² &nbsp; donde d en 1/32" — 1 = 1/32", 12 = 12/32"</p>
+      </div>
+      <div class="calc-grid">
+        <div class="panel glass">
+          <div class="field"><label>Tobera 1 (1/32")</label><input id="tfa-1" type="number" placeholder="Ej. 12" step="any"></div>
+          <div class="field"><label>Tobera 2 (1/32")</label><input id="tfa-2" type="number" placeholder="Ej. 12" step="any"></div>
+          <div class="field"><label>Tobera 3 (1/32")</label><input id="tfa-3" type="number" placeholder="Ej. 13" step="any"></div>
+          <div class="field"><label>Toberas extra (opcional, separadas por coma)</label><input id="tfa-extra" type="text" placeholder="Ej. 14, 15"></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="calcTFA()">Calcular</button>
+            <button class="btn btn-ghost" onclick="fillExample('tfa')">Ejemplo 12-12-13</button>
+            <button class="btn btn-ghost" onclick="exportPDF('tfa')">📄 PDF</button>
+          </div>
+        </div>
+        <div class="result-panel glass" id="res-tfa"><div class="result-empty">Ingresa diámetros y presiona Calcular</div></div>
+      </div>
+    </section>
+
+    <!-- 7 - ANNULAR VELOCITY -->
+    <section id="view-annular-vel" class="view">
+      <div class="calc-header glass">
+        <h2>7. Velocidad Anular <small>Annular Velocity</small></h2>
+        <p><code>AV (ft/min) = 24.51 × Q(gpm) / (Dh² - Dp²)</code></p>
+      </div>
+      <div class="calc-grid">
+        <div class="panel glass">
+          <div class="field"><label>Caudal (Q)</label><div class="input-row"><input id="av-q" type="number" placeholder="Ej. 400" step="any"><select id="av-q-u"><option value="gpm">gpm</option><option value="lpm">L/min</option><option value="m3min">m³/min</option></select></div></div>
+          <div class="field"><label>Diámetro Hoyo (Dh)</label><div class="input-row"><input id="av-dh" type="number" placeholder="12.25" step="any"><select id="av-dh-u"><option value="in">in</option><option value="mm">mm</option></select></div></div>
+          <div class="field"><label>Diámetro Tubería (Dp)</label><div class="input-row"><input id="av-dp" type="number" placeholder="5" step="any"><select id="av-dp-u"><option value="in">in</option><option value="mm">mm</option></select></div></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="calcAnnularVel()">Calcular</button>
+            <button class="btn btn-ghost" onclick="fillExample('annular-vel')">Ejemplo</button>
+            <button class="btn btn-ghost" onclick="exportPDF('annular-vel')">📄 PDF</button>
+          </div>
+        </div>
+        <div class="result-panel glass" id="res-annular-vel"><div class="result-empty">Ingresa datos y presiona Calcular</div></div>
+      </div>
+    </section>
+
+    <!-- 8 - BRINE DENSITY -->
+    <section id="view-brine-density" class="view">
+      <div class="calc-header glass">
+        <h2>8. Densidad de Salmuera <small>Brine Density</small></h2>
+        <p>Según sal y concentración (% peso). Valores IADC aproximados.</p>
+      </div>
+      <div class="calc-grid">
+        <div class="panel glass">
+          <div class="field"><label>Tipo de Sal</label><select id="bd-salt"><option value="NaCl">NaCl (Cloruro de Sodio) - max 10.0 ppg</option><option value="CaCl2">CaCl₂ (Cloruro de Calcio) - max 11.6 ppg</option><option value="KCl">KCl (Cloruro de Potasio) - max 9.7 ppg</option><option value="NaBr">NaBr (Bromuro de Sodio) - max 12.5 ppg</option><option value="CaBr2">CaBr₂ (Bromuro de Calcio) - max 15.1 ppg</option></select></div>
+          <div class="field"><label>Concentración (% peso)</label><input id="bd-conc" type="number" placeholder="Ej. 10" step="any" min="0" max="60"></div>
+          <div class="field"><label>O densidad objetivo (opcional) para calcular % requerido</label><div class="input-row"><input id="bd-target" type="number" placeholder="Ej. 9.5" step="any"><select id="bd-target-u"><option value="ppg">ppg</option><option value="sg">SG</option><option value="kgm3">kg/m³</option></select></div></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="calcBrineDensity()">Calcular</button>
+            <button class="btn btn-ghost" onclick="fillExample('brine-density')">Ejemplo NaCl 10%</button>
+            <button class="btn btn-ghost" onclick="exportPDF('brine-density')">📄 PDF</button>
+          </div>
+        </div>
+        <div class="result-panel glass" id="res-brine-density"><div class="result-empty">Selecciona sal y concentración</div></div>
+      </div>
+    </section>
+
+    <!-- 9 - SG & VISCOSITY -->
+    <section id="view-sg-visc" class="view">
+      <div class="calc-header glass">
+        <h2>9. Gravedad Específica y Viscosidad <small>SG & Brine Viscosity</small></h2>
+        <p>SG = ρ / 1000 kg/m³ &nbsp;|&nbsp; Viscosidad estimada según salinidad (correlación empírica)</p>
+      </div>
+      <div class="calc-grid">
+        <div class="panel glass">
+          <div class="field"><label>Densidad de Salmuera</label><div class="input-row"><input id="sg-rho" type="number" placeholder="Ej. 10" step="any"><select id="sg-rho-u"><option value="ppg">ppg</option><option value="sg">SG</option><option value="kgm3">kg/m³</option><option value="gcm3">g/cm³</option></select></div></div>
+          <div class="field"><label>Temperatura (para corrección viscosidad)</label><div class="input-row"><input id="sg-temp" type="number" placeholder="Ej. 77" step="any" value="77"><select id="sg-temp-u"><option value="F">°F</option><option value="C">°C</option></select></div></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="calcSGVisc()">Calcular</button>
+            <button class="btn btn-ghost" onclick="fillExample('sg-visc')">Ejemplo 10 ppg</button>
+            <button class="btn btn-ghost" onclick="exportPDF('sg-visc')">📄 PDF</button>
+          </div>
+        </div>
+        <div class="result-panel glass" id="res-sg-visc"><div class="result-empty">Ingresa densidad</div></div>
+      </div>
+    </section>
+
+    <!-- 10 - MUD WEIGHT ADJUSTMENT -->
+    <section id="view-mud-weight" class="view">
+      <div class="calc-header glass">
+        <h2>10. Ajuste de Peso del Lodo <small>Mud Weight Adjustment</small></h2>
+        <p>Densificación con Barita (SG 4.20) / Hematita (SG 5.05) o dilución con agua.</p>
+      </div>
+      <div class="calc-grid">
+        <div class="panel glass">
+          <div class="field"><label>Peso inicial (MW1)</label><div class="input-row"><input id="mw-w1" type="number" placeholder="Ej. 10.0" step="any"><select id="mw-w1-u"><option value="ppg">ppg</option><option value="sg">SG</option><option value="kgm3">kg/m³</option></select></div></div>
+          <div class="field"><label>Peso deseado (MW2)</label><div class="input-row"><input id="mw-w2" type="number" placeholder="Ej. 12.0" step="any"><select id="mw-w2-u"><option value="ppg">ppg</option><option value="sg">SG</option><option value="kgm3">kg/m³</option></select></div></div>
+          <div class="field"><label>Volumen inicial</label><div class="input-row"><input id="mw-vol" type="number" placeholder="Ej. 500" step="any"><select id="mw-vol-u"><option value="bbl">bbl</option><option value="m3">m³</option><option value="gal">gal</option></select></div></div>
+          <div class="field"><label>Material densificante</label><select id="mw-mat"><option value="barite">Barita (SG 4.20 - 35.4 ppg)</option><option value="hematite">Hematita (SG 5.05 - 42.1 ppg)</option><option value="calcium">Carbonato CaCO₃ (SG 2.70 - 22.5 ppg)</option></select></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="calcMudWeight()">Calcular</button>
+            <button class="btn btn-ghost" onclick="fillExample('mud-weight')">Ejemplo 10→12 ppg / 500 bbl</button>
+            <button class="btn btn-ghost" onclick="exportPDF('mud-weight')">📄 PDF</button>
+          </div>
+        </div>
+        <div class="result-panel glass" id="res-mud-weight"><div class="result-empty">Ingresa MW1, MW2 y volumen</div></div>
+      </div>
+    </section>
+
+    <!-- 11 - HYDROSTATIC -->
+    <section id="view-hydrostatic" class="view">
+      <div class="calc-header glass">
+        <h2>11. Presión Hidrostática <small>Hydrostatic Pressure</small></h2>
+        <p><code>P = MW × 0.052 × TVD</code> (Imperial) &nbsp;|&nbsp; <code>P = ρ × g × H</code> (Métrico)</p>
+      </div>
+      <div class="calc-grid">
+        <div class="panel glass">
+          <div class="field"><label>Densidad del Lodo (MW)</label><div class="input-row"><input id="hp-mw" type="number" placeholder="Ej. 12.5" step="any"><select id="hp-mw-u"><option value="ppg">ppg</option><option value="sg">SG</option><option value="kgm3">kg/m³</option><option value="gcm3">g/cm³</option><option value="pcf">pcf (lb/ft³)</option></select></div></div>
+          <div class="field"><label>Profundidad Vertical (TVD)</label><div class="input-row"><input id="hp-tvd" type="number" placeholder="Ej. 7000" step="any"><select id="hp-tvd-u"><option value="ft">ft</option><option value="m">m</option></select></div></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="calcHydrostatic()">Calcular</button>
+            <button class="btn btn-ghost" onclick="fillExample('hydrostatic')">Ejemplo 12.5 ppg × 7000 ft</button>
+            <button class="btn btn-ghost" onclick="exportPDF('hydrostatic')">📄 PDF</button>
+          </div>
+        </div>
+        <div class="result-panel glass" id="res-hydrostatic"><div class="result-empty">Ingresa MW y TVD</div></div>
+      </div>
+    </section>
+
+    <!-- 12 - ECD -->
+    <section id="view-ecd" class="view">
+      <div class="calc-header glass">
+        <h2>12. Densidad Equivalente de Circulación <small>ECD</small></h2>
+        <p><code>ECD = MW + ΔP_anular / (0.052 × TVD)</code></p>
+      </div>
+      <div class="calc-grid">
+        <div class="panel glass">
+          <div class="field"><label>Peso de Lodo estático (MW)</label><div class="input-row"><input id="ecd-mw" type="number" placeholder="Ej. 12.0" step="any"><select id="ecd-mw-u"><option value="ppg">ppg</option><option value="sg">SG</option><option value="kgm3">kg/m³</option></select></div></div>
+          <div class="field"><label>Pérdida de Presión Anular (ΔP)</label><div class="input-row"><input id="ecd-dp" type="number" placeholder="Ej. 200" step="any"><select id="ecd-dp-u"><option value="psi">psi</option><option value="kpa">kPa</option><option value="bar">bar</option></select></div></div>
+          <div class="field"><label>TVD</label><div class="input-row"><input id="ecd-tvd" type="number" placeholder="Ej. 10000" step="any"><select id="ecd-tvd-u"><option value="ft">ft</option><option value="m">m</option></select></div></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="calcECD()">Calcular</button>
+            <button class="btn btn-ghost" onclick="fillExample('ecd')">Ejemplo 12 ppg +200psi @10000ft</button>
+            <button class="btn btn-ghost" onclick="exportPDF('ecd')">📄 PDF</button>
+          </div>
+        </div>
+        <div class="result-panel glass" id="res-ecd"><div class="result-empty">Ingresa MW, ΔP y TVD</div></div>
+      </div>
+    </section>
+
+    <!-- CONVERTER -->
+    <section id="view-converter" class="view">
+      <div class="calc-header glass">
+        <h2>🔄 Conversor de Unidades Integrado</h2>
+        <p>Conversión instantánea de densidad, presión, longitud, volumen y caudal</p>
+      </div>
+      <div class="converter-grid">
+        <div class="panel glass">
+          <h4> Densidad</h4>
+          <div class="field"><label>Valor</label><input id="conv-dens-val" type="number" placeholder="12" step="any"></div>
+          <div class="field"><label>De</label><select id="conv-dens-from"><option value="ppg">ppg (lb/gal)</option><option value="sg">SG</option><option value="kgm3">kg/m³</option><option value="gcm3">g/cm³</option><option value="pcf">pcf</option><option value="psift">psi/ft</option></select></div>
+          <div class="field"><label>A</label><select id="conv-dens-to"><option value="sg">SG</option><option value="ppg">ppg</option><option value="kgm3">kg/m³</option><option value="gcm3">g/cm³</option><option value="pcf">pcf</option><option value="psift">psi/ft</option></select></div>
+          <button class="btn btn-primary" onclick="convertDensity()">Convertir</button>
+          <div id="conv-dens-res" class="conv-res"></div>
+        </div>
+        <div class="panel glass">
+          <h4> Presión</h4>
+          <div class="field"><label>Valor</label><input id="conv-pres-val" type="number" placeholder="3000" step="any"></div>
+          <div class="field"><label>De</label><select id="conv-pres-from"><option value="psi">psi</option><option value="kpa">kPa</option><option value="bar">bar</option><option value="mpa">MPa</option><option value="kgcm2">kg/cm²</option></select></div>
+          <div class="field"><label>A</label><select id="conv-pres-to"><option value="kpa">kPa</option><option value="psi">psi</option><option value="bar">bar</option><option value="mpa">MPa</option></select></div>
+          <button class="btn btn-primary" onclick="convertPressure()">Convertir</button>
+          <div id="conv-pres-res" class="conv-res"></div>
+        </div>
+        <div class="panel glass">
+          <h4> Longitud / Diámetro</h4>
+          <div class="field"><label>Valor</label><input id="conv-len-val" type="number" placeholder="12.25" step="any"></div>
+          <div class="field"><label>De</label><select id="conv-len-from"><option value="in">pulgadas (in)</option><option value="ft">pies (ft)</option><option value="mm">mm</option><option value="m">metros (m)</option></select></div>
+          <div class="field"><label>A</label><select id="conv-len-to"><option value="mm">mm</option><option value="in">in</option><option value="ft">ft</option><option value="m">m</option></select></div>
+          <button class="btn btn-primary" onclick="convertLength()">Convertir</button>
+          <div id="conv-len-res" class="conv-res"></div>
+        </div>
+        <div class="panel glass">
+          <h4> Volumen</h4>
+          <div class="field"><label>Valor</label><input id="conv-vol-val" type="number" placeholder="100" step="any"></div>
+          <div class="field"><label>De</label><select id="conv-vol-from"><option value="bbl">bbl</option><option value="gal">gal (US)</option><option value="L">Litros</option><option value="m3">m³</option><option value="ft3">ft³</option></select></div>
+          <div class="field"><label>A</label><select id="conv-vol-to"><option value="m3">m³</option><option value="bbl">bbl</option><option value="gal">gal</option><option value="L">Litros</option><option value="ft3">ft³</option></select></div>
+          <button class="btn btn-primary" onclick="convertVolume()">Convertir</button>
+          <div id="conv-vol-res" class="conv-res"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section id="view-history" class="view">
+      <div class="calc-header glass">
+        <h2>📜 Historial de Cálculos</h2>
+        <p>Almacenado localmente en tu navegador (localStorage). Persiste aunque cierres la pestaña.</p>
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="clearHistory()">🗑️ Limpiar Historial</button>
+          <button class="btn btn-ghost" onclick="exportHistoryPDF()">📄 Exportar Todo a PDF</button>
+        </div>
+      </div>
+      <div id="historyList" class="history-list"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Modal usuario para PDF -->
+<div id="userModal" class="modal hidden">
+  <div class="modal-box glass">
+    <h3>Nombre para el reporte PDF</h3>
+    <input id="userName" type="text" placeholder="Ej. Ing. Cristian Gaitán">
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="confirmPDF()">Generar PDF</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<footer class="footer glass">
+  <p>© 2026 SLB Sólidos • Mud Engineering Calculator • Fórmulas validadas IADC/SPE • <span id="calcCount">0 cálculos realizados</span></p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
