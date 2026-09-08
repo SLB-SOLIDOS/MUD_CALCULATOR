@@ -24,10 +24,10 @@
   <div class="header-left">
     <button id="btnMenu" class="btn-icon" aria-label="Menú">☰</button>
     <div class="logo">
-      <span class="logo-icon">🛢️</span>
+      <span class="logo-icon">⛽</span>
       <div>
         <h1>MUD<span>CALC</span></h1>
-        <p>Engineering Calculator v1.0</p>
+        <p>Perforación Petrolera <b>• v2.0 PRO</b></p>
       </div>
     </div>
   </div>
@@ -79,47 +79,56 @@
     <!-- DASHBOARD -->
     <section id="view-dashboard" class="view active">
       <div class="hero glass">
-        <div class="hero-text">
-          <h2>🛢️ Mud Engineering Calculator</h2>
-          <p>Herramienta profesional para Ingenieros de Lodos, Supervisores de Fluidos y Técnicos de Laboratorio. 12 calculadoras esenciales, conversión instantánea Imperial ↔ Métrico, historial persistente y reportes PDF.</p>
+        <div class="hero-left">
+          <div class="kid-badge">✨ Modo Fácil • Para todos • Perforación Petrolera</div>
+          <h2>Mud Engineering <span>Calculator</span></h2>
+          <div class="hero-sub">🛢️ Diseñada para Taladro • Tan fácil que un niño la usa, tan precisa que un ingeniero confía</div>
+          <p>Herramienta <b>petrolera profesional</b> con 12 calculadoras IADC/SPE. Sin manual, sin enredo: elige tu cálculo, pon 2 datos y obtén el resultado explicado como para niños. Ideal para campo, laboratorio y aula.</p>
+          <div class="hero-steps">
+            <span class="step"><b>1</b> Elige 🖱️</span>
+            <span class="step"><b>2</b> Pon números 🔢</span>
+            <span class="step"><b>3</b> ¡Resultado! 🎉</span>
+          </div>
           <div class="hero-actions">
-            <button class="btn btn-primary" onclick="navigate('hydrostatic')">Probar Presión Hidrostática →</button>
-            <button class="btn btn-ghost" onclick="navigate('converter')">Abrir Conversor</button>
+            <button class="btn btn-primary" onclick="navigate('hydrostatic')">🚀 Probar: Presión Hidrostática →</button>
+            <button class="btn btn-ghost" onclick="navigate('pipe-cap')">📚 Ver tutorial 30s</button>
           </div>
         </div>
-        <div class="hero-card glass">
-          <h4>⚡ Acceso rápido</h4>
+        <div class="hero-right">
+          <h4>⚡ Acceso súper rápido</h4>
+          <p class="hint">Toca y calcula — los más usados en perforación. Tip: usa <b>Ejemplo</b> para aprender en 1 clic.</p>
           <div class="quick-grid">
-            <button class="quick-btn" onclick="navigate('pipe-cap')">Capacidad Tubería</button>
-            <button class="quick-btn" onclick="navigate('pump-output')">Bombas</button>
-            <button class="quick-btn" onclick="navigate('hydrostatic')">Hidrostática</button>
-            <button class="quick-btn" onclick="navigate('ecd')">ECD</button>
-            <button class="quick-btn" onclick="navigate('mud-weight')">Peso Lodo</button>
-            <button class="quick-btn" onclick="navigate('annular-vel')">Vel. Anular</button>
+            <button class="quick-btn" onclick="navigate('pipe-cap')">🔩 Tubería</button>
+            <button class="quick-btn" onclick="navigate('pump-output')">⚙️ Bombas</button>
+            <button class="quick-btn" onclick="navigate('hydrostatic')">🏔️ Hidrostática</button>
+            <button class="quick-btn" onclick="navigate('ecd')">🌀 ECD</button>
+            <button class="quick-btn" onclick="navigate('mud-weight')">⚖️ Peso Lodo</button>
+            <button class="quick-btn" onclick="navigate('annular-vel')">💨 Vel. Anular</button>
           </div>
+          <div class="rig-illus"><span class="rig-tower">🏗️🛢️</span></div>
         </div>
       </div>
 
-      <h3 class="section-title">Módulos de Cálculo</h3>
+      <h3 class="section-title">🛢️ Módulos de Perforación • Toca para calcular</h3>
       <div class="cards-grid">
-        <div class="card glass" onclick="navigate('pipe-cap')"><span>🔩</span><h4>Capacidad Tubería</h4><p>Volumen interior bbls, gal, L, m³</p></div>
-        <div class="card glass" onclick="navigate('annular-cap')"><span>⭕</span><h4>Capacidad Anular</h4><p>Espacio entre tubería y pozo</p></div>
-        <div class="card glass" onclick="navigate('pipe-annular-vol')"><span>🔗</span><h4>Volumen Combinado</h4><p>Tubería + Anular total</p></div>
-        <div class="card glass" onclick="navigate('tank-vol')"><span>🟦</span><h4>Tanque Rectangular</h4><p>L×W×H volumen</p></div>
-        <div class="card glass" onclick="navigate('pump-output')"><span>⚙️</span><h4>Bombas Triplex/Dúplex</h4><p>GAL/STK, L/STK, bbl/min</p></div>
-        <div class="card glass" onclick="navigate('tfa')"><span>🎯</span><h4>TFA Toberas</h4><p>Área total de flujo</p></div>
-        <div class="card glass" onclick="navigate('annular-vel')"><span>💨</span><h4>Velocidad Anular</h4><p>ft/min, m/min</p></div>
-        <div class="card glass" onclick="navigate('brine-density')"><span>🧂</span><h4>Densidad Salmuera</h4><p>NaCl / CaCl₂ / KCl</p></div>
-        <div class="card glass" onclick="navigate('sg-visc')"><span>🧪</span><h4>SG & Viscosidad</h4><p>Gravedad y viscosidad</p></div>
-        <div class="card glass" onclick="navigate('mud-weight')"><span>⚖️</span><h4>Ajuste Peso Lodo</h4><p>Barita / Dilución</p></div>
-        <div class="card glass" onclick="navigate('hydrostatic')"><span>🏔️</span><h4>Presión Hidrostática</h4><p>P = MW × 0.052 × TVD</p></div>
-        <div class="card glass" onclick="navigate('ecd')"><span>🌀</span><h4>ECD</h4><p>Densidad equivalente circulando</p></div>
+        <div class="card glass" onclick="navigate('pipe-cap')"><div class="card-top"><span class="card-icon">🔩</span><span class="card-num">01</span></div><h4>Capacidad de Tubería</h4><p>Volumen interior del tubo</p><div class="card-kid"><b>Para niños:</b> ¿Cuánta agua cabe dentro del tubo largo? 🥤</div></div>
+        <div class="card glass" onclick="navigate('annular-cap')"><div class="card-top"><span class="card-icon">⭕</span><span class="card-num">02</span></div><h4>Capacidad Anular</h4><p>Espacio entre tubo y pozo</p><div class="card-kid"><b>Para niños:</b> El huequito entre dos tubos 🍩</div></div>
+        <div class="card glass" onclick="navigate('pipe-annular-vol')"><div class="card-top"><span class="card-icon">🔗</span><span class="card-num">03</span></div><h4>Volumen Combinado</h4><p>Tubería + Anular total</p><div class="card-kid"><b>Para niños:</b> Suma todo el lodo del pozo 🪣</div></div>
+        <div class="card glass" onclick="navigate('tank-vol')"><div class="card-top"><span class="card-icon">🟦</span><span class="card-num">04</span></div><h4>Tanque Rectangular</h4><p>L×W×H del tanque</p><div class="card-kid"><b>Para niños:</b> ¿Cuánto cabe en la piscina? 🏊</div></div>
+        <div class="card glass" onclick="navigate('pump-output')"><div class="card-top"><span class="card-icon">⚙️</span><span class="card-num">05</span></div><h4>Bombas Triplex/Dúplex</h4><p>Cuánto bombea por golpe</p><div class="card-kid"><b>Para niños:</b> Corazón del taladro que empuja lodo 💓</div></div>
+        <div class="card glass" onclick="navigate('tfa')"><div class="card-top"><span class="card-icon">🎯</span><span class="card-num">06</span></div><h4>TFA Toberas</h4><p>Agujeritos de la broca</p><div class="card-kid"><b>Para niños:</b> Por dónde sale el agua a presión 🚿</div></div>
+        <div class="card glass" onclick="navigate('annular-vel')"><div class="card-top"><span class="card-icon">💨</span><span class="card-num">07</span></div><h4>Velocidad Anular</h4><p>Qué tan rápido sube el lodo</p><div class="card-kid"><b>Para niños:</b> ¿Corre o camina el lodo? 🏃</div></div>
+        <div class="card glass" onclick="navigate('brine-density')"><div class="card-top"><span class="card-icon">🧂</span><span class="card-num">08</span></div><h4>Densidad Salmuera</h4><p>NaCl / CaCl₂ / KCl</p><div class="card-kid"><b>Para niños:</b> Agua con mucha sal ¿pesa más? ⚖️</div></div>
+        <div class="card glass" onclick="navigate('sg-visc')"><div class="card-top"><span class="card-icon">🧪</span><span class="card-num">09</span></div><h4>SG & Viscosidad</h4><p>Qué tan espeso es</p><div class="card-kid"><b>Para niños:</b> ¿Miel o agua? 🍯💧</div></div>
+        <div class="card glass" onclick="navigate('mud-weight')"><div class="card-top"><span class="card-icon">⚖️</span><span class="card-num">10</span></div><h4>Ajuste Peso de Lodo</h4><p>Barita para pesar más</p><div class="card-kid"><b>Para niños:</b> ¿Cuánta barita para que pese? 🪨</div></div>
+        <div class="card glass" onclick="navigate('hydrostatic')"><div class="card-top"><span class="card-icon">🏔️</span><span class="card-num">11</span></div><h4>Presión Hidrostática</h4><p>El peso de la columna</p><div class="card-kid"><b>Para niños:</b> Cuanto más profundo, más aprieta 🤿</div></div>
+        <div class="card glass" onclick="navigate('ecd')"><div class="card-top"><span class="card-icon">🌀</span><span class="card-num">12</span></div><h4>ECD</h4><p>Peso cuando circula</p><div class="card-kid"><b>Para niños:</b> Peso real cuando bombea 🌀</div></div>
       </div>
       <div class="info-strip glass">
-        <span>📏 Unidades globales: Imperial ↔ Métrico</span>
-        <span>💾 Historial en localStorage</span>
-        <span>📄 Exportación PDF profesional</span>
-        <span>📱 100% Responsive</span>
+        <span>🛢️ 100% Perforación Petrolera</span>
+        <span>🎯 Tan fácil como 1-2-3</span>
+        <span>📏 Imperial ↔ Métrico al instante</span>
+        <span>📄 PDF profesional en 1 clic</span>
       </div>
     </section>
 
@@ -127,7 +136,8 @@
     <section id="view-pipe-cap" class="view">
       <div class="calc-header glass">
         <h2>1. Capacidad de Tubería <small>Pipe Capacity</small></h2>
-        <p>Volumen interior de tubería. Fórmula imperial: <code>Cap (bbl/ft) = ID² / 1029.4</code></p>
+        <p>Volumen interior de tubería. Fórmula: <code>Cap (bbl/ft) = ID² / 1029.4</code></p>
+        <div class="kid-help">💡 <b>Para niños:</b> Imagina un tubo gigante de perforación. ¿Cuánta limonada cabe adentro? Solo pon el ancho del tubo y qué tan largo es. ¡El taladro lo necesita para saber cuánto lodo usar! 🛢️</div>
       </div>
       <div class="calc-grid">
         <div class="panel glass">
@@ -264,7 +274,8 @@
     <section id="view-annular-vel" class="view">
       <div class="calc-header glass">
         <h2>7. Velocidad Anular <small>Annular Velocity</small></h2>
-        <p><code>AV (ft/min) = 24.51 × Q(gpm) / (Dh² - Dp²)</code></p>
+        <p><code>AV (ft/min) = 24.51 × Q(gpm) / (Dh² - Dp²)</code> • Clave para limpieza del pozo</p>
+        <div class="kid-help">💡 <b>Para niños:</b> ¿Qué tan rápido sube el lodo por el hueco entre el tubo y la pared del pozo? Si va muy lento, los recortes se quedan abajo. ¡Debe correr como atleta! 🏃‍♂️💨</div>
       </div>
       <div class="calc-grid">
         <div class="panel glass">
