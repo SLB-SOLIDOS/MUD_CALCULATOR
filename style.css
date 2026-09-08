@@ -278,18 +278,34 @@ body::before{
   background:rgba(0,229,204,0.12);border:1px solid rgba(0,229,204,0.20);
   color:var(--mint);font-size:10px;cursor:help;font-weight:800;
 }
-.input-row{display:flex;gap:7px}
-.input-row input{flex:1}
+.input-row{display:flex;gap:8px;align-items:stretch}
+.input-row input{flex:1 1 auto;min-width:0}
+.input-row select{flex:0 0 148px;width:148px;min-width:148px}
 input,select{
-  width:100%;padding:11px 12px;border-radius:12px;
-  border:1px solid var(--input-border);
-  background:var(--input);color:var(--text);
-  font-size:13.5px;outline:none;transition:.18s;font-weight:600;
+  width:100%;padding:12px 13px;border-radius:12px;
+  border:1.5px solid var(--input-border);
+  background:rgba(255,255,255,0.06);color:var(--text);
+  font-size:13.8px;outline:none;transition:.18s;font-weight:600;
+  height:46px;line-height:1;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);
 }
-input::placeholder{color:var(--muted-2);font-weight:500}
-input:focus,select:focus{border-color:rgba(255,140,0,0.45);box-shadow:0 0 0 3px rgba(255,140,0,0.16);background:rgba(255,255,255,0.03)}
-[data-theme="light"] input:focus,[data-theme="light"] select:focus{background:#fff}
-select{cursor:pointer}
+[data-theme="light"] input,[data-theme="light"] select{background:rgba(255,255,255,0.95);border-color:rgba(11,20,40,0.10);color:#0B1428}
+input::placeholder{color:#8EA0C2;opacity:1;font-weight:500;font-size:13px}
+[data-theme="light"] input::placeholder{color:#6B7AA0}
+input:focus,select:focus{border-color:#FF8C00;box-shadow:0 0 0 4px rgba(255,140,0,0.18), inset 0 1px 0 rgba(255,255,255,0.06);background:rgba(255,255,255,0.08)}
+[data-theme="light"] input:focus,[data-theme="light"] select:focus{background:#fff;border-color:#FF8C00;box-shadow:0 0 0 4px rgba(255,140,0,0.15)}
+select{
+  cursor:pointer;appearance:none;-webkit-appearance:none;
+  background-image:linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:calc(100% - 18px) calc(50% - 2px), calc(100% - 12px) calc(50% - 2px);
+  background-size:6px 6px, 6px 6px;background-repeat:no-repeat;
+  padding-right:32px;font-weight:700;
+}
+select option{
+  background:#0B1428;color:#F8FAFC;padding:10px;font-weight:600;
+}
+[data-theme="light"] select option{background:#FFFFFF;color:#0B1428}
+select:focus option:checked{background:#FF8C00;color:#0B1428}
 .btn-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
 .btn{padding:11px 14px;border-radius:12px;border:none;cursor:pointer;font-weight:800;font-size:13px;transition:.18s;display:inline-flex;align-items:center;gap:6px;letter-spacing:.2px}
 .btn-primary{background:linear-gradient(135deg, #FF8C00 0%, #FF9500 50%, #FFA733 100%);color:#0B1428;box-shadow:0 8px 18px rgba(255,140,0,0.35), inset 0 1px 0 rgba(255,255,255,0.35)}
