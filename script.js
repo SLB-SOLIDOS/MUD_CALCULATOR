@@ -685,22 +685,53 @@ function calcSolidsRetort(){
       waterVol = waterFracLiq * liquidFrac;
       htmlExtra = `OBM OWR ${fmt(owrOil,0)}/${fmt(owrWater,0)}: líquido medio ${fmt(mixLiquidPpg,2)} ppg → s = (${fmt(mwPpg,2)}-${fmt(mixLiquidPpg,2)})/(${fmt(solidsPpg,2)}-${fmt(mixLiquidPpg,2)})`;
     }
+    // --- Override con % agua/aceite manual si el usuario los proporcionó ---
+    const manWaterPct = val('rt-water-pct'), manOilPct = val('rt-oil-pct');
+    if(manWaterPct!==null && manOilPct!==null){
+      if(manWaterPct<0||manWaterPct>100||manOilPct<0||manOilPct>100) throw new Error('% agua/aceite 0-100');
+      if(manWaterPct+manOilPct>=100) throw new Error('Suma agua+aceite debe ser <100');
+      waterVol = manWaterPct/100; oilVol = manOilPct/100;
+      solidsFrac = 1 - waterVol - oilVol;
+      htmlExtra += `<br>📋 Manual: agua ${fmt(manWaterPct,1)}% + aceite ${fmt(manOilPct,1)}% → sólidos ${fmt(solidsFrac*100,1)}%`;
+    } else if(manWaterPct!==null || manOilPct!==null){
+      throw new Error('Ingresa ambos % agua y % aceite o déjalos vacíos para cálculo automático');
+    }
     const solidsPct = solidsFrac*100, oilPct = oilVol*100, waterPct = waterVol*100;
-    // Estimar LGS vs HGS: asumir LGS 15% de sólidos por defecto o input
-    // Para simplificar: si densificante es barita/hematita, LGS ≈ 6% vol, resto HGS
-    // Calculamos HGS vol y LGS vol según SG
-    // Usamos lgsSG para partición: total sólidos masa = solidsFrac*avg = LGS*2.6 + HGS*sgHigh
-    // Necesitamos separar: asumimos LGS vol = 0.06 (6% fijo) o si WBM, todo es LGS+HGS según MW
-    let lgsVol = 0, hgsVol=0;
-    if(mat==='lgs'){
-      lgsVol = solidsFrac; hgsVol=0;
+    // --- Barita y Carbonato usados (lb/bbl) para concordancia derecha ---
+    const baritePPB = val('rt-barite-ppb'), caco3PPB = val('rt-caco3-ppb');
+    let bariteVol = 0, caco3Vol = 0, customHGSVol = 0;
+    if(baritePPB!==null && baritePPB>0){ bariteVol = baritePPB/(4.2*350); }
+    if(caco3PPB!==null && caco3PPB>0){ caco3Vol = caco3PPB/(2.7*350); }
+    // Si densificante es custom y se usó, calcular con su SG
+    if(mat==='custom' && (baritePPB===null && caco3PPB===null)){
+      // usar SG custom como HGS único
+      customHGSVol = 0;
+    }
+    let lgsVol = 0, hgsVol=0, baritePct=0, caco3Pct=0;
+    const hasManualHGS = (baritePPB!==null && baritePPB>0) || (caco3PPB!==null && caco3PPB>0);
+    if(hasManualHGS){
+      // Volúmenes aportados por densificantes ingresados
+      baritePct = bariteVol*100; caco3Pct = caco3Vol*100;
+      const sumHGSmanual = bariteVol + caco3Vol;
+      if(sumHGSmanual > solidsFrac+0.001) throw new Error(`Sólidos totales ${fmt(solidsPct,1)}% insuficientes para contener barita ${fmt(baritePct,1)}% + CaCO₃ ${fmt(caco3Pct,1)}% — revisa MW o cantidades`);
+      hgsVol = sumHGSmanual;
+      // Si solo uno de los dos fue ingresado y el otro no, el resto de sólidos es LGS + HGS restante según material principal
+      // Para mostrar concordancia: HGS total = manual, LGS = resto
+      lgsVol = solidsFrac - hgsVol;
+      if(lgsVol<0) lgsVol=0;
+      htmlExtra += `<br>🧱 Barita ${fmt(baritePPB||0,1)} lb/bbl → ${fmt(baritePct,2)}% vol | CaCO₃ ${fmt(caco3PPB||0,1)} lb/bbl → ${fmt(caco3Pct,2)}% vol`;
     } else {
-      // Estimación: LGS base 4-6% según MW, resto HGS
-      const baseLGS = Math.min(0.06, solidsFrac*0.35);
-      lgsVol = baseLGS;
-      hgsVol = solidsFrac - lgsVol;
+      // Estimación automática
+      if(mat==='lgs'){
+        lgsVol = solidsFrac; hgsVol=0;
+      } else {
+        const baseLGS = Math.min(0.06, solidsFrac*0.35);
+        lgsVol = baseLGS;
+        hgsVol = solidsFrac - lgsVol;
+      }
     }
     const lgsPct = lgsVol*100, hgsPct = hgsVol*100;
+    const hgsLabel = hasManualHGS ? (baritePPB>0 && caco3PPB>0 ? `HGS mezcla (Barita+CaCO₃)` : baritePPB>0 ? `HGS Barita (SG 4.2)` : `HGS CaCO₃ (SG 2.7)`) : `HGS (SG ${fmt(sgSolidsAvg,2)})`;
     // Sólidos totales en retorta de 50ml = solidsPct*0.5 ml? Pero mostramos %
     const retortSolidsMl = solidsPct*0.5; // 50ml * %
     const html=`
@@ -715,10 +746,11 @@ function calcSolidsRetort(){
       </div>
       <div class="result-grid">
         <div class="result-item"><strong>${fmt(lgsPct,1)}%</strong><small>LGS (SG ${fmt(lgsSG,2)})</small></div>
-        <div class="result-item"><strong>${fmt(hgsPct,1)}%</strong><small>HGS (SG ${fmt(sgSolidsAvg,2)})</small></div>
+        <div class="result-item"><strong>${fmt(hgsPct,1)}%</strong><small>${hgsLabel}</small></div>
         <div class="result-item"><strong>${fmt(solidsPpg,1)} ppg</strong><small>Dens. sólido</small></div>
         <div class="result-item"><strong>${fmt(mwPpg/8.33,3)} SG</strong><small>SG lodo</small></div>
       </div>
+      ${hasManualHGS ? `<div class="formula-box" style="margin-top:8px;background:rgba(0,229,204,0.08);border-color:rgba(0,229,204,0.18)">🧱 Validación densificantes: Barita ${fmt(baritePct,2)}% vol (${fmt(baritePPB||0,1)} lb/bbl) + CaCO₃ ${fmt(caco3Pct,2)}% vol (${fmt(caco3PPB||0,1)} lb/bbl) = HGS total ${fmt(hgsPct,1)}% — concordante con MW ${fmt(mwPpg,2)} ppg</div>` : ''}
       <div class="formula-box">${htmlExtra} = <b>${fmt(solidsPct,1)}% sólidos</b><br>
       Balance: MW = aceite·${fmt(oilPct,1)}% + agua·${fmt(waterPct,1)}% + sólidos·${fmt(solidsPct,1)}%<br>
       Retorta 50 ml esperada: Aceite ${fmt(oilPct*0.5,1)} ml + Agua ${fmt(waterPct*0.5,1)} ml + Sólidos ${fmt(retortSolidsMl,1)} ml<br>

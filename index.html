@@ -441,6 +441,13 @@
           <div class="field"><label>Densificante principal</label><select id="rt-mat" onchange="toggleRetortSG()"><option value="barite">Barita SG 4.20</option><option value="hematite">Hematita SG 5.05</option><option value="calcium">CaCO₃ SG 2.70</option><option value="lgs">Solo Low Gravity SG 2.60</option><option value="custom">⬚ Personalizado SG</option></select></div>
           <div class="field" id="field-rt-custom" style="display:none"><label>SG personalizado</label><input id="rt-custom-sg" type="number" placeholder="Ej. 4.20" step="any"></div>
           <div class="field"><label>SG Low Gravity Solids (arcilla)</label><input id="rt-lgs" type="number" value="2.60" step="any"></div>
+          <div class="field" style="margin-top:10px;padding:10px;background:rgba(255,140,0,0.07);border:1px solid rgba(255,140,0,0.14);border-radius:10px">
+            <label style="color:#FFA733;margin-bottom:8px">📋 Datos de campo (opcional — para validar retorta)</label>
+            <div class="field"><label>% Agua (opcional — si lo mediste en retorta)</label><input id="rt-water-pct" type="number" placeholder="Ej. 91.7" step="any" min="0" max="100"></div>
+            <div class="field"><label>% Aceite (opcional)</label><input id="rt-oil-pct" type="number" placeholder="Ej. 0" step="any" min="0" max="100"></div>
+            <div class="field"><label>Barita usada (lb/bbl) — cuánto agregaste</label><input id="rt-barite-ppb" type="number" placeholder="Ej. 45" step="any" min="0"></div>
+            <div class="field"><label>Carbonato CaCO₃ usado (lb/bbl) — cuánto agregaste</label><input id="rt-caco3-ppb" type="number" placeholder="Ej. 20" step="any" min="0"></div>
+          </div>
           <div class="btn-row">
             <button class="btn btn-primary" onclick="calcSolidsRetort()">Calcular Sólidos</button>
             <button class="btn btn-ghost" onclick="fillExample('solids-retort')">Ejemplo 12 ppg OBM 80/20 Barita</button>
