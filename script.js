@@ -447,7 +447,11 @@ function calcSGVisc(){
   }catch(e){ setResult('res-sg-visc',`<div style="color:#f87171">${e.message}</div>`)}
 }
 
-// ---------- 10 Mud Weight Adjustment ----------
+// ---------- 10 Mud Weight Adjustment (con SG personalizado) ----------
+function toggleCustomSG(){
+  const v=$('mw-mat').value;
+  $('field-custom-sg').style.display = v==='custom' ? 'block' : 'none';
+}
 function calcMudWeight(){
   try{
     const w1=val('mw-w1'), w2=val('mw-w2'), vol=val('mw-vol');
@@ -455,12 +459,17 @@ function calcMudWeight(){
     const w1ppg=toPpg(w1,$('mw-w1-u').value), w2ppg=toPpg(w2,$('mw-w2-u').value);
     const volBbl=volToBbl(vol,$('mw-vol-u').value);
     const mat=$('mw-mat').value;
-    const sgMat={barite:4.2, hematite:5.05, calcium:2.7}[mat];
-    const rhoMat=sgMat*8.33*42; // lb/bbl? Densidad barita 35.43 ppg => 1487 lb/bbl
-    // Pero usar fórmula estándar: sacks barite (100 lb) = (W2-W1)*V / (35.43 - W2) *14.7 ??? Simplificamos balance masa/volumen
-    // Balance: (V*w1 + m)/(V + m/rhoMat_weightPerBbl) = w2
-    // rhoMat en ppg: barite 35.43 ppg (1470 lb/bbl /42?), actually barite bulk SG 4.2 => 35 ppg
-    const matPpg={barite:35.43, hematite:42.1, calcium:22.5}[mat];
+    let sgMat, matPpg;
+    const preset={barite:4.2, hematite:5.05, calcium:2.7};
+    const presetPpg={barite:35.43, hematite:42.1, calcium:22.5};
+    if(mat==='custom'){
+      const sg=val('mw-custom-sg'); requirePos(sg,'SG personalizado');
+      if(sg<1 || sg>7) throw new Error('SG debe estar entre 1.0 y 7.0');
+      sgMat=sg; matPpg=sg*8.33*1.015; // corrección leve por densidad aparente (SG*8.33); usar directo SG*8.33
+      matPpg=sg*8.33;
+    } else {
+      sgMat=preset[mat]; matPpg=presetPpg[mat];
+    }
     let resultHtml='';
     if(w2ppg > w1ppg){
       // densificar
@@ -567,6 +576,151 @@ function calcECD(){
   }catch(e){ setResult('res-ecd',`<div style="color:#f87171">${e.message}</div>`)}
 }
 
+// ---------- 13 Mix Two/Three Fluids (réplica exacta captura) ----------
+function calcMixFluids(){
+  try{
+    const w1=val('mix-w1'), v1=val('mix-v1'), w2=val('mix-w2'), v2=val('mix-v2');
+    requirePos(w1,'Weight Fluid 1'); requirePos(v1,'Volume Fluid 1');
+    requirePos(w2,'Weight Fluid 2'); requirePos(v2,'Volume Fluid 2');
+    const w3=val('mix-w3'), v3=val('mix-v3');
+    const has3 = w3!==null && v3!==null && w3>0 && v3>0;
+    // Si w3 dado pero v3 no, o viceversa, error
+    if((w3!==null && v3===null) || (w3===null && v3!==null)) throw new Error('Fluido 3: ingresa peso y volumen juntos o déjalos vacíos');
+    const w1ppg=toPpg(w1,$('mix-w1-u').value), w2ppg=toPpg(w2,$('mix-w2-u').value);
+    const v1bbl=volToBbl(v1,$('mix-v1-u').value), v2bbl=volToBbl(v2,$('mix-v2-u').value);
+    let totalV = v1bbl+v2bbl, weighted = w1ppg*v1bbl + w2ppg*v2bbl, n=2;
+    let w3ppg=0, v3bbl=0;
+    if(has3){
+      w3ppg=toPpg(w3,$('mix-w3-u').value); v3bbl=volToBbl(v3,$('mix-v3-u').value);
+      totalV+=v3bbl; weighted+=w3ppg*v3bbl; n=3;
+    }
+    const finalPpg = weighted/totalV;
+    const finalSG = finalPpg/8.33;
+    // Volumen total en ambas unidades
+    const totalM3 = bblTo(totalV,'m3');
+    // Detalle por fluido
+    const html=`
+      <div class="result-title">Resultado — Mix ${n} Fluidos</div>
+      <div class="result-big"><span>${fmt(finalPpg,2)}</span> ppg</div>
+      <div class="result-sub">${n} fluidos mezclados • Volumen total <b>${fmt(totalV,2)} bbl</b> (${fmt(totalM3,3)} m³)</div>
+      <div class="result-grid">
+        <div class="result-item"><strong>${fmt(finalSG,3)} SG</strong><small>SG final</small></div>
+        <div class="result-item"><strong>${fmt(finalPpg*119.826,0)} kg/m³</strong><small>kg/m³</small></div>
+        <div class="result-item"><strong>${fmt(totalV,2)} bbl</strong><small>Vol total</small></div>
+        <div class="result-item"><strong>${fmt(finalPpg*0.052,3)} psi/ft</strong><small>Gradiente</small></div>
+      </div>
+      <div class="formula-box">Fórmula: <b>MW = (W1·V1 + W2·V2${has3?' + W3·V3':''}) / (V1+V2${has3?'+V3':''})</b><br>
+      (${fmt(w1ppg,2)}×${fmt(v1bbl,1)} + ${fmt(w2ppg,2)}×${fmt(v2bbl,1)}${has3?' + '+fmt(w3ppg,2)+'×'+fmt(v3bbl,1):''}) / ${fmt(totalV,1)} = <b>${fmt(finalPpg,2)} ppg</b><br>
+      Detalle: F1 ${fmt(w1ppg,2)} ppg × ${fmt(v1bbl,1)} bbl + F2 ${fmt(w2ppg,2)}×${fmt(v2bbl,1)}${has3?` + F3 ${fmt(w3ppg,2)}×${fmt(v3bbl,1)}`:''}
+      </div>`;
+    setResult('res-mix-fluids',html,{titulo:'13. Mix Two/Three Fluids', resumen:`${fmt(finalPpg,2)} ppg • ${fmt(totalV,2)} bbl • ${n} fluidos`});
+    addHistory({titulo:'13. Mix Fluids', resumen:`${fmt(finalPpg,2)} ppg | ${fmt(totalV,1)} bbl`});
+  }catch(e){ setResult('res-mix-fluids',`<div style="color:#f87171">${e.message}</div>`)}
+}
+
+// ---------- 14 Sólidos Totales / Retorta ----------
+function toggleRetortType(){
+  const t=$('rt-type').value;
+  const isOBM = t==='obm';
+  $('field-owr').style.display = isOBM ? 'block' : 'none';
+  $('rt-oil-d').disabled = !isOBM;
+}
+function toggleRetortSG(){
+  const v=$('rt-mat').value;
+  $('field-rt-custom').style.display = v==='custom' ? 'block' : 'none';
+}
+function calcSolidsRetort(){
+  try{
+    const mw=val('rt-mw'); requirePos(mw,'MW');
+    const mwPpg=toPpg(mw,$('rt-mw-u').value);
+    const type=$('rt-type').value;
+    const oilDinput=val('rt-oil-d') || 0.84;
+    const waterDinput=val('rt-water-d') || 8.33;
+    // oil y water densidades a ppg
+    const oilPpg = $('rt-oil-u').value==='sg' ? oilDinput*8.33 : oilDinput;
+    const waterPpg = $('rt-water-u').value==='sg' ? waterDinput*8.33 : waterDinput;
+    const mat=$('rt-mat').value;
+    let sgSolidsAvg;
+    const presetSolids={barite:4.2, hematite:5.05, calcium:2.7, lgs:2.6};
+    if(mat==='custom'){
+      const sg=val('rt-custom-sg'); requirePos(sg,'SG personalizado');
+      sgSolidsAvg=sg;
+    } else {
+      sgSolidsAvg=presetSolids[mat] || 4.2;
+    }
+    const lgsSG=val('rt-lgs') || 2.6;
+    // sólidos avg ppg
+    const solidsPpg = sgSolidsAvg*8.33;
+    let solidsFrac=0, oilVol=0, waterVol=0;
+    let htmlExtra='';
+    if(type==='wbm'){
+      // Base agua: s = (MW - water_d) / (solids_d - water_d)
+      if(solidsPpg <= waterPpg) throw new Error('SG sólido debe ser > agua');
+      solidsFrac = (mwPpg - waterPpg) / (solidsPpg - waterPpg);
+      if(solidsFrac<0) solidsFrac=0; if(solidsFrac>0.6) solidsFrac=0.6;
+      waterVol = 1 - solidsFrac;
+      oilVol = 0;
+      htmlExtra = `WBM: sólidos = (MW - agua)/(sólido - agua) = (${fmt(mwPpg,2)}-${fmt(waterPpg,2)})/(${fmt(solidsPpg,2)}-${fmt(waterPpg,2)})`;
+    } else {
+      // OBM: con OWR
+      let owrOil=val('rt-owr-oil'), owrWater=val('rt-owr-water');
+      if(owrOil===null) owrOil=80; if(owrWater===null) owrWater=20;
+      const totalOWR = owrOil+owrWater;
+      const oilFracLiq = owrOil/totalOWR, waterFracLiq = owrWater/totalOWR;
+      const mixLiquidPpg = oilFracLiq*oilPpg + waterFracLiq*waterPpg;
+      // s = (MW - mixLiquid)/(solids - mixLiquid)
+      if(solidsPpg <= mixLiquidPpg) throw new Error('SG sólido insuficiente para alcanzar MW con ese OWR');
+      solidsFrac = (mwPpg - mixLiquidPpg) / (solidsPpg - mixLiquidPpg);
+      if(solidsFrac<0) solidsFrac=0; if(solidsFrac>0.5) solidsFrac=0.5;
+      const liquidFrac = 1 - solidsFrac;
+      oilVol = oilFracLiq * liquidFrac;
+      waterVol = waterFracLiq * liquidFrac;
+      htmlExtra = `OBM OWR ${fmt(owrOil,0)}/${fmt(owrWater,0)}: líquido medio ${fmt(mixLiquidPpg,2)} ppg → s = (${fmt(mwPpg,2)}-${fmt(mixLiquidPpg,2)})/(${fmt(solidsPpg,2)}-${fmt(mixLiquidPpg,2)})`;
+    }
+    const solidsPct = solidsFrac*100, oilPct = oilVol*100, waterPct = waterVol*100;
+    // Estimar LGS vs HGS: asumir LGS 15% de sólidos por defecto o input
+    // Para simplificar: si densificante es barita/hematita, LGS ≈ 6% vol, resto HGS
+    // Calculamos HGS vol y LGS vol según SG
+    // Usamos lgsSG para partición: total sólidos masa = solidsFrac*avg = LGS*2.6 + HGS*sgHigh
+    // Necesitamos separar: asumimos LGS vol = 0.06 (6% fijo) o si WBM, todo es LGS+HGS según MW
+    let lgsVol = 0, hgsVol=0;
+    if(mat==='lgs'){
+      lgsVol = solidsFrac; hgsVol=0;
+    } else {
+      // Estimación: LGS base 4-6% según MW, resto HGS
+      const baseLGS = Math.min(0.06, solidsFrac*0.35);
+      lgsVol = baseLGS;
+      hgsVol = solidsFrac - lgsVol;
+    }
+    const lgsPct = lgsVol*100, hgsPct = hgsVol*100;
+    // Sólidos totales en retorta de 50ml = solidsPct*0.5 ml? Pero mostramos %
+    const retortSolidsMl = solidsPct*0.5; // 50ml * %
+    const html=`
+      <div class="result-title">Resultado — Sólidos Retorta Esperados</div>
+      <div class="result-big"><span>${fmt(solidsPct,1)}</span> % sólidos</div>
+      <div class="result-sub">MW ${fmt(mwPpg,2)} ppg • Densificante SG ${fmt(sgSolidsAvg,2)} • ${type==='obm'?'OBM':'WBM'}</div>
+      <div class="result-grid">
+        <div class="result-item"><strong>${fmt(oilPct,1)}%</strong><small>Aceite</small></div>
+        <div class="result-item"><strong>${fmt(waterPct,1)}%</strong><small>Agua</small></div>
+        <div class="result-item"><strong>${fmt(solidsPct,1)}%</strong><small>Sólidos totales</small></div>
+        <div class="result-item"><strong>${fmt(retortSolidsMl,1)} ml</strong><small>en retorta 50 ml</small></div>
+      </div>
+      <div class="result-grid">
+        <div class="result-item"><strong>${fmt(lgsPct,1)}%</strong><small>LGS (SG ${fmt(lgsSG,2)})</small></div>
+        <div class="result-item"><strong>${fmt(hgsPct,1)}%</strong><small>HGS (SG ${fmt(sgSolidsAvg,2)})</small></div>
+        <div class="result-item"><strong>${fmt(solidsPpg,1)} ppg</strong><small>Dens. sólido</small></div>
+        <div class="result-item"><strong>${fmt(mwPpg/8.33,3)} SG</strong><small>SG lodo</small></div>
+      </div>
+      <div class="formula-box">${htmlExtra} = <b>${fmt(solidsPct,1)}% sólidos</b><br>
+      Balance: MW = aceite·${fmt(oilPct,1)}% + agua·${fmt(waterPct,1)}% + sólidos·${fmt(solidsPct,1)}%<br>
+      Retorta 50 ml esperada: Aceite ${fmt(oilPct*0.5,1)} ml + Agua ${fmt(waterPct*0.5,1)} ml + Sólidos ${fmt(retortSolidsMl,1)} ml<br>
+      <b>Dato de campo:</b> si tu retorta marca ±2% de estos valores, el lodo está en especificación.
+      </div>`;
+    setResult('res-solids-retort',html,{titulo:'14. Sólidos / Retorta', resumen:`${fmt(solidsPct,1)}% sólidos • ${fmt(oilPct,1)}% aceite • ${fmt(waterPct,1)}% agua`});
+    addHistory({titulo:'14. Retorta Sólidos', resumen:`${fmt(solidsPct,1)}% sólidos | MW ${fmt(mwPpg,2)} ppg`});
+  }catch(e){ setResult('res-solids-retort',`<div style="color:#f87171">${e.message}</div>`)}
+}
+
 // ---------- Conversores ----------
 function convertDensity(){
   const v=val('conv-dens-val'); if(v===null) return;
@@ -632,9 +786,11 @@ function fillExample(which){
     'annular-vel':()=>{ $('av-q').value=400; $('av-dh').value=12.25; $('av-dp').value=5; calcAnnularVel(); },
     'brine-density':()=>{ $('bd-salt').value='NaCl'; $('bd-conc').value=10; $('bd-target').value=''; calcBrineDensity(); },
     'sg-visc':()=>{ $('sg-rho').value=10; $('sg-rho-u').value='ppg'; calcSGVisc(); },
-    'mud-weight':()=>{ $('mw-w1').value=10; $('mw-w2').value=12; $('mw-vol').value=500; calcMudWeight(); },
+    'mud-weight':()=>{ $('mw-w1').value=10; $('mw-w2').value=12; $('mw-vol').value=500; $('mw-mat').value='barite'; toggleCustomSG(); calcMudWeight(); },
     'hydrostatic':()=>{ $('hp-mw').value=12.5; $('hp-tvd').value=7000; calcHydrostatic(); },
     'ecd':()=>{ $('ecd-mw').value=12; $('ecd-dp').value=200; $('ecd-tvd').value=10000; calcECD(); },
+    'mix-fluids':()=>{ $('mix-w1').value=10; $('mix-w1-u').value='ppg'; $('mix-v1').value=100; $('mix-v1-u').value='bbl'; $('mix-w2').value=12; $('mix-w2-u').value='ppg'; $('mix-v2').value=100; $('mix-v2-u').value='bbl'; $('mix-w3').value=''; $('mix-v3').value=''; calcMixFluids(); },
+    'solids-retort':()=>{ $('rt-mw').value=12; $('rt-mw-u').value='ppg'; $('rt-type').value='obm'; toggleRetortType(); $('rt-oil-d').value=0.84; $('rt-water-d').value=8.33; $('rt-owr-oil').value=80; $('rt-owr-water').value=20; $('rt-mat').value='barite'; toggleRetortSG(); calcSolidsRetort(); },
   };
   if(map[which]) map[which]();
 }
@@ -718,7 +874,8 @@ window.navigate=navigate; window.calcPipeCap=calcPipeCap; window.calcAnnularCap=
 window.calcPipeAnnularVol=calcPipeAnnularVol; window.calcTankVol=calcTankVol; window.calcPump=calcPump;
 window.togglePumpType=togglePumpType; window.calcTFA=calcTFA; window.calcAnnularVel=calcAnnularVel;
 window.calcBrineDensity=calcBrineDensity; window.calcSGVisc=calcSGVisc; window.calcMudWeight=calcMudWeight;
-window.calcHydrostatic=calcHydrostatic; window.calcECD=calcECD; window.convertDensity=convertDensity;
-window.convertPressure=convertPressure; window.convertLength=convertLength; window.convertVolume=convertVolume;
+window.calcHydrostatic=calcHydrostatic; window.calcECD=calcECD; window.calcMixFluids=calcMixFluids; window.calcSolidsRetort=calcSolidsRetort;
+window.toggleCustomSG=toggleCustomSG; window.toggleRetortType=toggleRetortType; window.toggleRetortSG=toggleRetortSG;
+window.convertDensity=convertDensity; window.convertPressure=convertPressure; window.convertLength=convertLength; window.convertVolume=convertVolume;
 window.fillExample=fillExample; window.exportPDF=exportPDF; window.closeModal=closeModal; window.confirmPDF=confirmPDF;
 window.clearHistory=clearHistory; window.exportHistoryPDF=exportHistoryPDF; window.reExport=reExport; window.removeHistory=removeHistory;
