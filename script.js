@@ -791,27 +791,50 @@ function getFrackFactor(){
   const h = val('ft-height') || 285;
   if(type==='global500') return {factor: 500/h, capacity:500, height:h, name:'Global Verde 500 BBL'};
   if(type==='global400') return {factor: 400/h, capacity:400, height:h, name:'Global Verde 400 BBL'};
-  // custom
   const L=val('ft-l')||1402, W=val('ft-w')||259;
-  // factor por cm para tanque rectangular plano: L*W*1cm = L*W cm3 => m3 = L*W/1e6 => bbl = /0.158987
   let f = (L*W/1e6)/0.158987;
-  // corrección round bottom - 15% menos por curvatura inferior (investigación Ironclad round bottom)
   f = f * 0.77;
   const cap = f*h;
   return {factor:f, capacity:cap, height:h, name:`Custom ${L}x${W}x${h} cm`};
 }
+// Helper: aforo con descuadre llanta 0-84 cm (2 tramos)
+function getTireParams(){
+  const th = val('ft-tire-h');
+  const tireH = (th!==null ? th : 84);
+  const corr = val('ft-tire-corr');
+  const corrVal = (corr!==null ? corr : 12);
+  const unit = $('ft-tire-corr-u') ? $('ft-tire-corr-u').value : '%';
+  return {tireH, corrVal, unit};
+}
+function frackBblForLevel(level, factor, tireH, corrVal, unit){
+  if(level===null || level<=0) return 0;
+  const h = tireH;
+  let factorLow = factor;
+  if(unit==='%') factorLow = factor * (1 - corrVal/100);
+  else factorLow = factor - (corrVal / h);
+  if(factorLow<0) factorLow=0;
+  if(level <= h) return level * factorLow;
+  return h*factorLow + (level - h)*factor;
+}
+function frackEffectiveCapacity(factor, height, tireH, corrVal, unit){
+  return frackBblForLevel(height, factor, tireH, corrVal, unit);
+}
 function generateFrackStrap(){
   const {factor, height} = getFrackFactor();
+  const {tireH, corrVal, unit} = getTireParams();
   const el=$('ft-strapping'); if(!el) return;
-  let html='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;font-weight:800;color:#FFA733;margin-bottom:6px"><span>cm</span><span>bbl</span><span>L</span><span>%</span></div>';
+  let html='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;font-weight:800;color:#FFA733;margin-bottom:6px"><span>cm (nivel)</span><span>bbl</span><span>L</span><span>libre</span></div>';
   for(let cm=0; cm<=height; cm+=20){
-    const bbl=cm*factor;
+    const bbl=frackBblForLevel(cm, factor, tireH, corrVal, unit);
     const liters=bbl*158.987;
-    const pct=(cm/height*100);
-    html+=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;border-top:1px solid rgba(255,255,255,0.06);padding:3px 0"><span>${cm}</span><span>${fmt(bbl,1)}</span><span>${fmt(liters,0)}</span><span>${fmt(pct,0)}%</span></div>`;
+    const free=height-cm;
+    const isLow = cm<=tireH && cm>0;
+    html+=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;border-top:1px solid rgba(255,255,255,0.06);padding:3px 0;${isLow?'background:rgba(255,140,0,0.08)':''}"><span>${cm}${isLow?'*':''}</span><span>${fmt(bbl,1)}</span><span>${fmt(liters,0)}</span><span>${fmt(free,0)} cm</span></div>`;
   }
-  // detallar primeros 30 cm con corrección redondeada
-  html+=`<div style="margin-top:8px;color:#4ADE80;font-size:10px">Factor: ${fmt(factor,3)} bbl/cm = ${fmt(factor*158.987,0)} L/cm | Capacidad ${fmt(factor*height,1)} bbl</div>`;
+  const capEff = frackEffectiveCapacity(factor, height, tireH, corrVal, unit);
+  const lost = factor*height - capEff;
+  html+=`<div style="margin-top:8px;color:#4ADE80;font-size:10px">Factor base: ${fmt(factor,3)} bbl/cm | 0-${tireH}cm con llanta: ${unit==='%'?corrVal+'% menos':corrVal+' bbl perdidos'} → Capacidad efectiva <b>${fmt(capEff,1)} bbl</b> (nominal ${fmt(factor*height,1)} bbl, perdido ${fmt(lost,1)} bbl)</div>`;
+  html+=`<div style="color:#FFA733;font-size:10px">* primeros ${tireH} cm con descuadre llanta</div>`;
   el.innerHTML=html;
 }
 function calcFrackTanks(){
@@ -833,21 +856,14 @@ function calcFrackTanks(){
     const count=Math.max(1, val('ft-count')||1);
     const mode=$('ft-mode').value;
     let html='', resumen='';
-    // Datos base stock (siempre con nivel derivado del espacio libre)
-    let currentBbl = level!==null ? level*factor : 0;
+    const {tireH, corrVal, unit} = getTireParams();
+    const capEff = frackEffectiveCapacity(factor, height, tireH, corrVal, unit);
+    // Datos base stock con aforo 2 tramos (0-84 llanta, 84+ completo)
+    let currentBbl = level!==null ? frackBblForLevel(level, factor, tireH, corrVal, unit) : 0;
     let freeCm = level!==null ? height - level : height;
-    let freeBbl = freeCm*factor;
-    let pct = level!==null ? level/height*100 : 0;
-    // Ajuste round bottom para niveles bajos <30 cm: -12% (investigación DiamondTank strapping)
-    let correctionNote='';
-    if(level!==null && level<30){
-      const corr = level*factor*0.88; // 12% menos por fondo curvo
-      correctionNote=`<br><small style="color:#F59E0B">⚠️ Fondo curvo: corrección -12% por round bottom → ${fmt(corr,1)} bbl (lineal ${fmt(currentBbl,1)} bbl)</small>`;
-      // usar corregido como real
-      currentBbl = corr;
-      freeBbl = capacity - currentBbl;
-      freeCm = height - level; // cm libre igual
-    }
+    let freeBbl = level!==null ? capEff - currentBbl : capEff;
+    let pct = level!==null ? currentBbl/capEff*100 : 0;
+    let correctionNote = level!==null && level<=tireH ? `<br><small style="color:#FFA733">🛞 Zona llanta (0-${tireH} cm): factor corregido ${unit==='%'?corrVal+'%':corrVal+' bbl'} menos → ${fmt(currentBbl,1)} bbl</small>` : '';
     if(mode==='stock'){
       if(level===null) throw new Error('Ingresa Espacio LIBRE (cm) o Nivel de fluido');
       html=`
@@ -885,11 +901,19 @@ function calcFrackTanks(){
         cmDiff = before - after;
         if(cmDiff<=0) throw new Error('ANTES debe ser mayor que DESPUÉS (descenso) — con espacio libre: ANTES vacío debe ser MENOR que DESPUÉS vacío');
       }
-      const bblTrans = cmDiff*factor;
-      // corrección si before o after en fondo curvo
-      let bblTransCorr = bblTrans;
-      if((before!==null && before<30) || (after!==null && after<30)) bblTransCorr = bblTrans*0.88;
-      const afterBbl = (level!==null ? level*factor : (after!==null?after*factor:0));
+      // Cálculo con aforo 2 tramos: diferencia de aforos (no lineal)
+      let bblTrans=0, bblTransCorr=0;
+      if(cmTrans!==null && cmTrans>0 && before===null){
+        // solo cm sueltos: asumir tramo alto (sin llanta) para estimación
+        bblTrans = cmTrans*factor;
+        bblTransCorr = bblTrans;
+      } else {
+        const bblBefore = frackBblForLevel(before, factor, tireH, corrVal, unit);
+        const bblAfter = frackBblForLevel(after, factor, tireH, corrVal, unit);
+        bblTrans = bblBefore - bblAfter;
+        bblTransCorr = bblTrans;
+      }
+      const afterBbl = (level!==null ? frackBblForLevel(level, factor, tireH, corrVal, unit) : (after!==null?frackBblForLevel(after, factor, tireH, corrVal, unit):0));
       html=`
         <div class="result-title">Transferencia — ${name}</div>
         <div class="result-big"><span>${fmt(bblTransCorr,1)}</span> bbl transferidos</div>
@@ -906,9 +930,16 @@ function calcFrackTanks(){
       resumen=`${fmt(bblTransCorr,1)} bbl (${fmt(cmDiff,1)} cm) transferidos`;
     } else if(mode==='need'){
       const need=val('ft-need-bbl'); requirePos(need,'Barriles requeridos');
-      const cmNeed = need/factor;
-      if(cmNeed>freeCm) throw new Error(`Necesitas ${fmt(cmNeed,1)} cm pero solo hay ${fmt(freeCm,0)} cm libres (${fmt(freeBbl,1)} bbl)`);
-      const newLevel = (level||0) + cmNeed;
+      if(need>freeBbl+0.001) throw new Error(`Necesitas ${fmt(need,1)} bbl pero solo hay ${fmt(freeBbl,1)} bbl libres (${fmt(freeCm,0)} cm) — capacidad efectiva ${fmt(capEff,1)} bbl`);
+      // Calcular cm necesarios con aforo 2 tramos
+      const targetBbl = currentBbl + need;
+      let targetLevel;
+      const factorLow = unit==='%' ? factor*(1-corrVal/100) : factor - (corrVal/tireH);
+      const bblAtTire = tireH*factorLow;
+      if(targetBbl <= bblAtTire) targetLevel = targetBbl / factorLow;
+      else targetLevel = tireH + (targetBbl - bblAtTire)/factor;
+      const cmNeed = targetLevel - (level||0);
+      const newLevel = targetLevel;
       html=`
         <div class="result-title">Necesidad — ${name}</div>
         <div class="result-big"><span>${fmt(cmNeed,1)}</span> cm necesarios</div>
@@ -999,7 +1030,7 @@ function fillExample(which){
     'ecd':()=>{ $('ecd-mw').value=12; $('ecd-dp').value=200; $('ecd-tvd').value=10000; calcECD(); },
     'mix-fluids':()=>{ $('mix-w1').value=10; $('mix-w1-u').value='ppg'; $('mix-v1').value=100; $('mix-v1-u').value='bbl'; $('mix-w2').value=12; $('mix-w2-u').value='ppg'; $('mix-v2').value=100; $('mix-v2-u').value='bbl'; $('mix-w3').value=''; $('mix-v3').value=''; calcMixFluids(); },
     'solids-retort':()=>{ $('rt-mw').value=12; $('rt-mw-u').value='ppg'; $('rt-type').value='obm'; toggleRetortType(); $('rt-oil-d').value=0.84; $('rt-water-d').value=8.33; $('rt-owr-oil').value=80; $('rt-owr-water').value=20; $('rt-mat').value='barite'; toggleRetortSG(); calcSolidsRetort(); },
-    'fracktanks':()=>{ $('ft-type').value='global500'; toggleFrackType(); $('ft-height').value=285; $('ft-level').value=180; $('ft-mode').value='stock'; toggleFrackMode(); $('ft-count').value=1; calcFrackTanks(); },
+    'fracktanks':()=>{ $('ft-type').value='global500'; toggleFrackType(); $('ft-height').value=285; $('ft-free').value=105; $('ft-level').value=''; $('ft-mode').value='stock'; toggleFrackMode(); $('ft-count').value=1; generateFrackStrap(); calcFrackTanks(); },
   };
   if(map[which]) map[which]();
 }

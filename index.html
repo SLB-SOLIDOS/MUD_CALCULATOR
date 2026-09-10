@@ -491,6 +491,13 @@
           <div id="ft-need-fields" style="display:none">
             <div class="field"><label>Barriles que necesitas agregar (bbl)</label><input id="ft-need-bbl" type="number" placeholder="Ej. 120" step="any"></div>
           </div>
+          <div class="field" style="background:rgba(255,140,0,0.08);border:1px solid rgba(255,140,0,0.18);padding:10px;border-radius:10px">
+            <label style="color:#FFA733">🛞 Descuadre por llanta — primeros 84 cm (desde fondo)</label>
+            <p style="font-size:11px;color:var(--muted);margin-bottom:8px">Tu tanque tiene llanta interna que roba volumen abajo. El sistema usa <b>aforo en 2 tramos</b>: 0-84 cm con corrección, 84+ cm aforo completo.</p>
+            <div class="field"><label>Altura con llanta (cm) — desde fondo</label><input id="ft-tire-h" type="number" value="84" step="any" onchange="generateFrackStrap()"></div>
+            <div class="field"><label>Corrección por llanta (% menos volumen)</label><div class="input-row"><input id="ft-tire-corr" type="number" value="12" step="any" min="0" max="50" onchange="generateFrackStrap()"><select id="ft-tire-corr-u" onchange="generateFrackStrap()"><option value="%">%</option><option value="bbl">bbl perdidos totales</option></select></div></div>
+            <small style="color:var(--muted);font-size:10px">Por defecto 12% = ~14.7 bbl perdidos en 0-84 cm (147.3 bbl lineales → 132.6 reales). Ajusta según tu aforo real.</small>
+          </div>
           <div class="field"><label>Número de tanques (si tienes varios iguales)</label><input id="ft-count" type="number" placeholder="1" value="1" step="any" min="1"></div>
           <div class="btn-row">
             <button class="btn btn-primary" onclick="calcFrackTanks()">Calcular Frack Tanks</button>
