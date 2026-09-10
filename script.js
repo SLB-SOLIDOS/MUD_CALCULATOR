@@ -863,13 +863,16 @@ function calcFrackTanks(){
     let freeCm = level!==null ? height - level : height;
     let freeBbl = level!==null ? capEff - currentBbl : capEff;
     let pct = level!==null ? currentBbl/capEff*100 : 0;
-    let correctionNote = level!==null && level<=tireH ? `<br><small style="color:#FFA733">🛞 Zona llanta (0-${tireH} cm): factor corregido ${unit==='%'?corrVal+'%':corrVal+' bbl'} menos → ${fmt(currentBbl,1)} bbl</small>` : '';
+    const linearBbl = level!==null ? level*factor : 0;
+    const lostBbl = linearBbl - currentBbl;
+    let correctionNote = `<br><small style="color:${lostBbl>0.5?'#F59E0B':'#4ADE80'}">🛞 Llanta 0-${tireH}cm: ${unit==='%'?corrVal+'%':corrVal+' bbl'} menos → <b>Sin llanta ${fmt(linearBbl,1)} bbl</b> vs <b>Con llanta ${fmt(currentBbl,1)} bbl</b> (perdido <b>${fmt(lostBbl,1)} bbl</b>)</small>`;
+    if(level!==null && level<=tireH) correctionNote = `<br><small style="color:#F59E0B">🛞 ¡Estás en zona llanta! (0-${tireH} cm) factor ${fmt(factor*(unit==='%'?1-corrVal/100:1),3)} → ${fmt(currentBbl,1)} bbl (lineal ${fmt(linearBbl,1)} bbl)</small>`;
     if(mode==='stock'){
       if(level===null) throw new Error('Ingresa Espacio LIBRE (cm) o Nivel de fluido');
       html=`
         <div class="result-title">Stock — ${name} x${count}</div>
-        <div class="result-big"><span>${fmt(currentBbl*count,1)}</span> bbl</div>
-        <div class="result-sub">${freeInput!==null ? `Medido por <b>espacio libre ${fmt(freeInput,1)} cm</b> → Nivel ${fmt(level,1)} cm` : `Nivel ${fmt(level,1)} cm`} / ${fmt(height,0)} cm (${fmt(pct,1)}% lleno) — Factor ${fmt(factor,3)} bbl/cm${correctionNote}</div>
+        <div class="result-big"><span>${fmt(currentBbl*count,1)}</span> bbl <small style="font-size:12px;color:var(--muted)">(sin llanta ${fmt(linearBbl*count,1)} bbl)</small></div>
+        <div class="result-sub">${freeInput!==null ? `Medido por <b>espacio libre ${fmt(freeInput,1)} cm</b> → Nivel ${fmt(level,1)} cm` : `Nivel ${fmt(level,1)} cm`} / ${fmt(height,0)} cm (${fmt(pct,1)}% del efectivo ${fmt(capEff,1)} bbl) — Factor ${fmt(factor,3)} bbl/cm${correctionNote}</div>
         <div class="result-grid">
           <div class="result-item"><strong>${fmt(currentBbl,1)} bbl</strong><small>Por tanque</small></div>
           <div class="result-item"><strong>${fmt(currentBbl*158.987,0)} L</strong><small>Litros/tanque</small></div>
@@ -882,8 +885,10 @@ function calcFrackTanks(){
           <div class="result-item"><strong>${fmt(pct,1)}%</strong><small>Ocupado</small></div>
           <div class="result-item"><strong>${fmt(100-pct,1)}%</strong><small>Libre</small></div>
         </div>
-        <div class="formula-box">Frack Tank Verde Global: 500 BBL = 79,500 L (21,000 gal) Dim 14.02×2.59×3.35 m<br>
-        Cálculo: bbl = nivel(cm) × factor(${fmt(factor,3)}) → ${fmt(level,1)}×${fmt(factor,3)}=<b>${fmt(currentBbl,1)} bbl</b> | Libres: ${fmt(height,0)}-${fmt(level,0)}=${fmt(freeCm,0)} cm → ${fmt(freeBbl,1)} bbl<br>
+        <div class="formula-box" style="border-left:3px solid #22C55E">Frack Tank Verde Global: 500 BBL = 79,500 L Dim 14.02×2.59×3.35 m — <b>Aforo 2 tramos con llanta</b><br>
+        Tramo 0-${tireH}cm: factor ${fmt(factor*(unit==='%'?1-corrVal/100:1 - corrVal/(tireH*factor)),3)} bbl/cm (${unit==='%'?corrVal+'% menos':corrVal+' bbl perdidos'}) | Tramo ${tireH}-${height}cm: ${fmt(factor,3)} bbl/cm<br>
+        Nivel ${fmt(level,1)}cm → ${level<=tireH?`${fmt(level,1)}×${fmt(factor*(unit==='%'?1-corrVal/100:1),3)}`:`${tireH}×${fmt(factor*(unit==='%'?1-corrVal/100:1),3)} + ${fmt(level-tireH,1)}×${fmt(factor,3)}`}=<b>${fmt(currentBbl,1)} bbl (lineal sin llanta ${fmt(linearBbl,1)} bbl)</b><br>
+        Libres: ${fmt(freeCm,0)} cm → ${fmt(freeBbl,1)} bbl de ${fmt(capEff,1)} bbl efectivos (nominal ${fmt(factor*height,1)} bbl - perdido ${fmt(factor*height-capEff,1)} bbl)<br>
         Para ${count} tanque(s): Stock total ${fmt(currentBbl*count,1)} bbl, Libre total ${fmt(freeBbl*count,1)} bbl</div>`;
       resumen=`${fmt(currentBbl,1)} bbl (${fmt(pct,1)}%) | Libres ${fmt(freeBbl,1)} bbl (${fmt(freeCm,0)} cm)`;
     } else if(mode==='transfer'){
@@ -914,10 +919,12 @@ function calcFrackTanks(){
         bblTransCorr = bblTrans;
       }
       const afterBbl = (level!==null ? frackBblForLevel(level, factor, tireH, corrVal, unit) : (after!==null?frackBblForLevel(after, factor, tireH, corrVal, unit):0));
+      const linearTrans = cmDiff*factor;
+      const lostTrans = linearTrans - bblTransCorr;
       html=`
         <div class="result-title">Transferencia — ${name}</div>
-        <div class="result-big"><span>${fmt(bblTransCorr,1)}</span> bbl transferidos</div>
-        <div class="result-sub">Descontado ${fmt(cmDiff,1)} cm × ${fmt(factor,3)} bbl/cm ${cmDiff!==bblTransCorr/factor?' (corregido fondo curvo)':''}</div>
+        <div class="result-big"><span>${fmt(bblTransCorr,1)}</span> bbl transferidos <small style="font-size:11px;color:var(--muted)">(lineal sin llanta ${fmt(linearTrans,1)} bbl)</small></div>
+        <div class="result-sub">Descontado ${fmt(cmDiff,1)} cm — Con llanta <b>${fmt(bblTransCorr,1)} bbl</b> vs Sin llanta ${fmt(linearTrans,1)} bbl (dif. <b>${fmt(lostTrans,1)} bbl</b> en 0-${tireH}cm)</div>
         <div class="result-grid">
           <div class="result-item"><strong>${fmt(cmDiff,1)} cm</strong><small>Descontados</small></div>
           <div class="result-item"><strong>${fmt(bblTransCorr,1)} bbl</strong><small>Transferidos/tanque</small></div>
