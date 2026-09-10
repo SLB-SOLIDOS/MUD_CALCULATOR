@@ -761,6 +761,151 @@ function calcSolidsRetort(){
   }catch(e){ setResult('res-solids-retort',`<div style="color:#f87171">${e.message}</div>`)}
 }
 
+// ---------- 15 Frack Tanks Global Verde 500 BBL - Investigación SLB ----------
+// Datos de investigación: Global Verde 500 BBL = 79,500 L (500 bbl = 21,000 gal)
+// Dim reales: Largo 14.02 m, Ancho 2.59 m, Alto total 3.35 m (hasta techo), Altura útil aprox 2.85 m (285 cm) Round Bottom
+// Factor investigado: 500 bbl / 285 cm = 1.754 bbl/cm (1 cm = 1.754 bbl = 278.9 L = 73.68 gal)
+// Para 400 BBL: 400/285 = 1.403 bbl/cm. Para custom: L*W/1e6/0.158987 con corrección round bottom 0.77 si aplica.
+function toggleFrackType(){
+  const v=$('ft-type').value;
+  const custom=$('ft-custom-dims');
+  if(custom) custom.style.display = v==='custom' ? 'block' : 'none';
+  // actualizar altura por defecto
+  if(v==='global500') $('ft-height').value=285;
+  if(v==='global400') $('ft-height').value=285;
+  generateFrackStrap();
+}
+function toggleFrackMode(){
+  const m=$('ft-mode').value;
+  $('ft-transfer-fields').style.display = m==='transfer' ? 'block' : 'none';
+  $('ft-need-fields').style.display = m==='need' ? 'block' : 'none';
+}
+function getFrackFactor(){
+  const type=$('ft-type').value;
+  const h = val('ft-height') || 285;
+  if(type==='global500') return {factor: 500/h, capacity:500, height:h, name:'Global Verde 500 BBL'};
+  if(type==='global400') return {factor: 400/h, capacity:400, height:h, name:'Global Verde 400 BBL'};
+  // custom
+  const L=val('ft-l')||1402, W=val('ft-w')||259;
+  // factor por cm para tanque rectangular plano: L*W*1cm = L*W cm3 => m3 = L*W/1e6 => bbl = /0.158987
+  let f = (L*W/1e6)/0.158987;
+  // corrección round bottom - 15% menos por curvatura inferior (investigación Ironclad round bottom)
+  f = f * 0.77;
+  const cap = f*h;
+  return {factor:f, capacity:cap, height:h, name:`Custom ${L}x${W}x${h} cm`};
+}
+function generateFrackStrap(){
+  const {factor, height} = getFrackFactor();
+  const el=$('ft-strapping'); if(!el) return;
+  let html='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;font-weight:800;color:#FFA733;margin-bottom:6px"><span>cm</span><span>bbl</span><span>L</span><span>%</span></div>';
+  for(let cm=0; cm<=height; cm+=20){
+    const bbl=cm*factor;
+    const liters=bbl*158.987;
+    const pct=(cm/height*100);
+    html+=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;border-top:1px solid rgba(255,255,255,0.06);padding:3px 0"><span>${cm}</span><span>${fmt(bbl,1)}</span><span>${fmt(liters,0)}</span><span>${fmt(pct,0)}%</span></div>`;
+  }
+  // detallar primeros 30 cm con corrección redondeada
+  html+=`<div style="margin-top:8px;color:#4ADE80;font-size:10px">Factor: ${fmt(factor,3)} bbl/cm = ${fmt(factor*158.987,0)} L/cm | Capacidad ${fmt(factor*height,1)} bbl</div>`;
+  el.innerHTML=html;
+}
+function calcFrackTanks(){
+  try{
+    const {factor, capacity, height, name} = getFrackFactor();
+    const level=val('ft-level');
+    const count=Math.max(1, val('ft-count')||1);
+    if(level!==null && (level<0 || level>height)) throw new Error(`Nivel debe estar 0-${height} cm`);
+    const mode=$('ft-mode').value;
+    let html='', resumen='';
+    // Datos base stock
+    let currentBbl = level!==null ? level*factor : 0;
+    let freeCm = level!==null ? height - level : height;
+    let freeBbl = freeCm*factor;
+    let pct = level!==null ? level/height*100 : 0;
+    // Ajuste round bottom para niveles bajos <30 cm: -12% (investigación DiamondTank strapping)
+    let correctionNote='';
+    if(level!==null && level<30){
+      const corr = level*factor*0.88; // 12% menos por fondo curvo
+      correctionNote=`<br><small style="color:#F59E0B">⚠️ Fondo curvo: corrección -12% por round bottom → ${fmt(corr,1)} bbl (lineal ${fmt(currentBbl,1)} bbl)</small>`;
+      // usar corregido como real
+      currentBbl = corr;
+      freeBbl = capacity - currentBbl;
+      freeCm = height - level; // cm libre igual
+    }
+    if(mode==='stock'){
+      requirePos(level,'Nivel actual');
+      html=`
+        <div class="result-title">Stock — ${name} x${count}</div>
+        <div class="result-big"><span>${fmt(currentBbl*count,1)}</span> bbl</div>
+        <div class="result-sub">Nivel ${fmt(level,1)} cm / ${fmt(height,0)} cm (${fmt(pct,1)}% lleno) — Factor ${fmt(factor,3)} bbl/cm${correctionNote}</div>
+        <div class="result-grid">
+          <div class="result-item"><strong>${fmt(currentBbl,1)} bbl</strong><small>Por tanque</small></div>
+          <div class="result-item"><strong>${fmt(currentBbl*158.987,0)} L</strong><small>Litros/tanque</small></div>
+          <div class="result-item"><strong>${fmt(freeCm,0)} cm</strong><small>Libres</small></div>
+          <div class="result-item"><strong>${fmt(freeBbl,1)} bbl</strong><small>Libres/tanque</small></div>
+        </div>
+        <div class="result-grid">
+          <div class="result-item"><strong>${fmt(freeBbl*count,1)} bbl</strong><small>Libres totales x${count}</small></div>
+          <div class="result-item"><strong>${fmt((currentBbl*count)*158.987/1000,2)} m³</strong><small>Stock total m³</small></div>
+          <div class="result-item"><strong>${fmt(pct,1)}%</strong><small>Ocupado</small></div>
+          <div class="result-item"><strong>${fmt(100-pct,1)}%</strong><small>Libre</small></div>
+        </div>
+        <div class="formula-box">Frack Tank Verde Global: 500 BBL = 79,500 L (21,000 gal) Dim 14.02×2.59×3.35 m<br>
+        Cálculo: bbl = nivel(cm) × factor(${fmt(factor,3)}) → ${fmt(level,1)}×${fmt(factor,3)}=<b>${fmt(currentBbl,1)} bbl</b> | Libres: ${fmt(height,0)}-${fmt(level,0)}=${fmt(freeCm,0)} cm → ${fmt(freeBbl,1)} bbl<br>
+        Para ${count} tanque(s): Stock total ${fmt(currentBbl*count,1)} bbl, Libre total ${fmt(freeBbl*count,1)} bbl</div>`;
+      resumen=`${fmt(currentBbl,1)} bbl (${fmt(pct,1)}%) | Libres ${fmt(freeBbl,1)} bbl (${fmt(freeCm,0)} cm)`;
+    } else if(mode==='transfer'){
+      const before=val('ft-before'), after=val('ft-after'), cmTrans=val('ft-cm-trans');
+      let cmDiff=0;
+      if(cmTrans!==null && cmTrans>0) cmDiff=cmTrans;
+      else {
+        requirePos(before,'Nivel ANTES'); requirePos(after,'Nivel DESPUÉS');
+        cmDiff = before - after;
+        if(cmDiff<=0) throw new Error('ANTES debe ser mayor que DESPUÉS (descenso)');
+      }
+      const bblTrans = cmDiff*factor;
+      // corrección si before o after en fondo curvo
+      let bblTransCorr = bblTrans;
+      if((before!==null && before<30) || (after!==null && after<30)) bblTransCorr = bblTrans*0.88;
+      const afterBbl = (level!==null ? level*factor : (after!==null?after*factor:0));
+      html=`
+        <div class="result-title">Transferencia — ${name}</div>
+        <div class="result-big"><span>${fmt(bblTransCorr,1)}</span> bbl transferidos</div>
+        <div class="result-sub">Descontado ${fmt(cmDiff,1)} cm × ${fmt(factor,3)} bbl/cm ${cmDiff!==bblTransCorr/factor?' (corregido fondo curvo)':''}</div>
+        <div class="result-grid">
+          <div class="result-item"><strong>${fmt(cmDiff,1)} cm</strong><small>Descontados</small></div>
+          <div class="result-item"><strong>${fmt(bblTransCorr,1)} bbl</strong><small>Transferidos/tanque</small></div>
+          <div class="result-item"><strong>${fmt(bblTransCorr*count,1)} bbl</strong><small>Transfer total x${count}</small></div>
+          <div class="result-item"><strong>${fmt(bblTransCorr*158.987,0)} L</strong><small>Litros/tanque</small></div>
+        </div>
+        <div class="formula-box">Transferencia: cm = ANTES - DESPUÉS = ${before!==null?fmt(before,0):'?'} - ${after!==null?fmt(after,0):'?'} = <b>${fmt(cmDiff,1)} cm</b><br>
+        Barriles = cm × ${fmt(factor,3)} = ${fmt(cmDiff,1)}×${fmt(factor,3)}=<b>${fmt(bblTransCorr,1)} bbl</b> por tanque<br>
+        Para ${count} tanque(s): ${fmt(bblTransCorr*count,1)} bbl = ${fmt(bblTransCorr*count*42,0)} gal</div>`;
+      resumen=`${fmt(bblTransCorr,1)} bbl (${fmt(cmDiff,1)} cm) transferidos`;
+    } else if(mode==='need'){
+      const need=val('ft-need-bbl'); requirePos(need,'Barriles requeridos');
+      const cmNeed = need/factor;
+      if(cmNeed>freeCm) throw new Error(`Necesitas ${fmt(cmNeed,1)} cm pero solo hay ${fmt(freeCm,0)} cm libres (${fmt(freeBbl,1)} bbl)`);
+      const newLevel = (level||0) + cmNeed;
+      html=`
+        <div class="result-title">Necesidad — ${name}</div>
+        <div class="result-big"><span>${fmt(cmNeed,1)}</span> cm necesarios</div>
+        <div class="result-sub">Para agregar ${fmt(need,1)} bbl con factor ${fmt(factor,3)} bbl/cm</div>
+        <div class="result-grid">
+          <div class="result-item"><strong>${fmt(cmNeed,1)} cm</strong><small>Altura requerida</small></div>
+          <div class="result-item"><strong>${fmt(newLevel,1)} cm</strong><small>Nivel final</small></div>
+          <div class="result-item"><strong>${fmt(freeCm-cmNeed,0)} cm</strong><small>Quedará libre</small></div>
+          <div class="result-item"><strong>${fmt((freeBbl-need),1)} bbl</strong><small>Libre después</small></div>
+        </div>
+        <div class="formula-box">cm necesarios = bbl / factor = ${fmt(need,1)}/${fmt(factor,3)}=<b>${fmt(cmNeed,1)} cm</b><br>
+        Nivel final: ${fmt(level||0,0)} + ${fmt(cmNeed,1)} = ${fmt(newLevel,1)} cm (${fmt(newLevel/height*100,1)}%)</div>`;
+      resumen=`Necesitas ${fmt(cmNeed,1)} cm para ${fmt(need,1)} bbl`;
+    }
+    setResult('res-fracktanks',html,{titulo:'15. Frack Tanks Transferencia '+name, resumen});
+    addHistory({titulo:'15. Frack Tanks', resumen});
+    generateFrackStrap();
+  }catch(e){ setResult('res-fracktanks',`<div style="color:#f87171">${e.message}</div>`)}
+}
+
 // ---------- Conversores ----------
 function convertDensity(){
   const v=val('conv-dens-val'); if(v===null) return;
@@ -831,6 +976,7 @@ function fillExample(which){
     'ecd':()=>{ $('ecd-mw').value=12; $('ecd-dp').value=200; $('ecd-tvd').value=10000; calcECD(); },
     'mix-fluids':()=>{ $('mix-w1').value=10; $('mix-w1-u').value='ppg'; $('mix-v1').value=100; $('mix-v1-u').value='bbl'; $('mix-w2').value=12; $('mix-w2-u').value='ppg'; $('mix-v2').value=100; $('mix-v2-u').value='bbl'; $('mix-w3').value=''; $('mix-v3').value=''; calcMixFluids(); },
     'solids-retort':()=>{ $('rt-mw').value=12; $('rt-mw-u').value='ppg'; $('rt-type').value='obm'; toggleRetortType(); $('rt-oil-d').value=0.84; $('rt-water-d').value=8.33; $('rt-owr-oil').value=80; $('rt-owr-water').value=20; $('rt-mat').value='barite'; toggleRetortSG(); calcSolidsRetort(); },
+    'fracktanks':()=>{ $('ft-type').value='global500'; toggleFrackType(); $('ft-height').value=285; $('ft-level').value=180; $('ft-mode').value='stock'; toggleFrackMode(); $('ft-count').value=1; calcFrackTanks(); },
   };
   if(map[which]) map[which]();
 }
@@ -912,6 +1058,9 @@ try{ toggleRetortType(); }catch(e){}
 try{ toggleRetortSG(); }catch(e){}
 try{ toggleCustomSG(); }catch(e){}
 try{ togglePumpType(); }catch(e){}
+try{ toggleFrackType(); }catch(e){}
+try{ toggleFrackMode(); }catch(e){}
+try{ generateFrackStrap(); }catch(e){}
 const savedUser=localStorage.getItem('mud_user'); if(savedUser) $('userName').value=savedUser;
 
 // Exponer globales para onclick
@@ -919,8 +1068,8 @@ window.navigate=navigate; window.calcPipeCap=calcPipeCap; window.calcAnnularCap=
 window.calcPipeAnnularVol=calcPipeAnnularVol; window.calcTankVol=calcTankVol; window.calcPump=calcPump;
 window.togglePumpType=togglePumpType; window.calcTFA=calcTFA; window.calcAnnularVel=calcAnnularVel;
 window.calcBrineDensity=calcBrineDensity; window.calcSGVisc=calcSGVisc; window.calcMudWeight=calcMudWeight;
-window.calcHydrostatic=calcHydrostatic; window.calcECD=calcECD; window.calcMixFluids=calcMixFluids; window.calcSolidsRetort=calcSolidsRetort;
-window.toggleCustomSG=toggleCustomSG; window.toggleRetortType=toggleRetortType; window.toggleRetortSG=toggleRetortSG;
+window.calcHydrostatic=calcHydrostatic; window.calcECD=calcECD; window.calcMixFluids=calcMixFluids; window.calcSolidsRetort=calcSolidsRetort; window.calcFrackTanks=calcFrackTanks;
+window.toggleCustomSG=toggleCustomSG; window.toggleRetortType=toggleRetortType; window.toggleRetortSG=toggleRetortSG; window.toggleFrackType=toggleFrackType; window.toggleFrackMode=toggleFrackMode; window.generateFrackStrap=generateFrackStrap;
 window.convertDensity=convertDensity; window.convertPressure=convertPressure; window.convertLength=convertLength; window.convertVolume=convertVolume;
 window.fillExample=fillExample; window.exportPDF=exportPDF; window.closeModal=closeModal; window.confirmPDF=confirmPDF;
 window.clearHistory=clearHistory; window.exportHistoryPDF=exportHistoryPDF; window.reExport=reExport; window.removeHistory=removeHistory;

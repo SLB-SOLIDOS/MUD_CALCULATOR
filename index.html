@@ -65,6 +65,7 @@
       <li><a href="#" data-view="ecd" class="nav-link">1️⃣2️⃣ ECD</a></li>
       <li><a href="#" data-view="mix-fluids" class="nav-link">1️⃣3️⃣ Mix 2/3 Fluidos</a></li>
       <li><a href="#" data-view="solids-retort" class="nav-link">1️⃣4️⃣ Sólidos / Retorta</a></li>
+      <li><a href="#" data-view="fracktanks" class="nav-link">1️⃣5️⃣ Frack Tanks — Transfer.</a></li>
       <li class="nav-sep">HERRAMIENTAS</li>
       <li><a href="#" data-view="converter" class="nav-link">🔄 Conversor de Unidades</a></li>
       <li><a href="#" data-view="history" class="nav-link">📜 Historial <span id="historyBadge" class="badge">0</span></a></li>
@@ -127,6 +128,7 @@
         <div class="card glass" onclick="navigate('ecd')"><div class="card-top"><span class="card-icon">🌀</span><span class="card-num">12</span></div><h4>ECD</h4><p>Peso cuando circula</p></div>
         <div class="card glass" onclick="navigate('mix-fluids')"><div class="card-top"><span class="card-icon">🧪</span><span class="card-num">13</span></div><h4>Mix 2/3 Fluidos</h4><p>Mezcla exacta ppg/sg</p></div>
         <div class="card glass" onclick="navigate('solids-retort')"><div class="card-top"><span class="card-icon">🧱</span><span class="card-num">14</span></div><h4>Sólidos / Retorta</h4><p>% sólidos esperado</p></div>
+        <div class="card glass" onclick="navigate('fracktanks')"><div class="card-top"><span class="card-icon">🟩</span><span class="card-num">15</span></div><h4>Frack Tanks — Transfer.</h4><p>Verde Global 500 BBL</p></div>
       </div>
       <div class="info-strip glass">
         <span>🛢️ 100% Perforación Petrolera</span>
@@ -455,6 +457,46 @@
           </div>
         </div>
         <div class="result-panel glass" id="res-solids-retort"><div class="result-empty">Ingresa MW y datos de fases.<br>Verás <b>% sólidos, % aceite, % agua</b> esperado en retorta de 50 ml.</div></div>
+      </div>
+    </section>
+
+    <!-- 15 - FRACK TANKS GLOBAL VERDE 500 BBL - TRANSFERENCIA AUTOMATIZADA -->
+    <section id="view-fracktanks" class="view">
+      <div class="calc-header glass">
+        <h2>15. Frack Tanks — Transferencia & Capacidad <small style="background:#22C55E;color:#0B1428;padding:3px 8px;border-radius:999px">Verde Global 500 BBL</small></h2>
+        <p>Automatiza todo: <b>cm libres, fluidos existentes, cm descontados y bbl transferidos</b>. Basado en Frac Tank Global Verde Estándar 500 BBL (79,500 L) — investigación SLB. Tabla de aforo integrada.</p>
+      </div>
+      <div class="calc-grid">
+        <div class="panel glass">
+          <div class="field"><label>Tipo de Frack Tank</label><select id="ft-type" onchange="toggleFrackType()"><option value="global500">🟩 Global Verde 500 BBL — 79,500 L (Estándar)</option><option value="global400">🟩 Global Verde 400 BBL — 63,600 L</option><option value="custom">⬚ Personalizado — ingresar dimensiones</option></select></div>
+          <div id="ft-custom-dims" style="display:none">
+            <div class="field"><label>Largo interno (cm)</label><input id="ft-l" type="number" placeholder="1402" value="1402" step="any"></div>
+            <div class="field"><label>Ancho interno (cm)</label><input id="ft-w" type="number" placeholder="259" value="259" step="any"></div>
+            <div class="field"><label>Altura total útil (cm)</label><input id="ft-h" type="number" placeholder="285" value="285" step="any"></div>
+          </div>
+          <div class="field" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.18);padding:10px;border-radius:10px">
+            <label style="color:#4ADE80">📏 Medición actual en campo</label>
+            <div class="field"><label>Altura total del tanque (cm)</label><input id="ft-height" type="number" placeholder="285" value="285" step="any"></div>
+            <div class="field"><label>Nivel actual de fluido (cm) — desde fondo</label><input id="ft-level" type="number" placeholder="Ej. 180" step="any"></div>
+            <div class="field"><label>¿Qué quieres calcular?</label><select id="ft-mode" onchange="toggleFrackMode()"><option value="stock">Solo Stock — cuánto tengo y cuánto libre</option><option value="transfer">Transferencia — cm antes y después</option><option value="need">Necesito agregar — barriles requeridos</option></select></div>
+          </div>
+          <div id="ft-transfer-fields" style="display:none">
+            <div class="field"><label>Nivel ANTES de transferir (cm)</label><input id="ft-before" type="number" placeholder="Ej. 220" step="any"></div>
+            <div class="field"><label>Nivel DESPUÉS de transferir (cm)</label><input id="ft-after" type="number" placeholder="Ej. 140" step="any"></div>
+            <div class="field"><label>O centímetros transferidos (cm) — alternativa</label><input id="ft-cm-trans" type="number" placeholder="Ej. 80" step="any"></div>
+          </div>
+          <div id="ft-need-fields" style="display:none">
+            <div class="field"><label>Barriles que necesitas agregar (bbl)</label><input id="ft-need-bbl" type="number" placeholder="Ej. 120" step="any"></div>
+          </div>
+          <div class="field"><label>Número de tanques (si tienes varios iguales)</label><input id="ft-count" type="number" placeholder="1" value="1" step="any" min="1"></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="calcFrackTanks()">Calcular Frack Tanks</button>
+            <button class="btn btn-ghost" onclick="fillExample('fracktanks')">Ejemplo 180cm → 500 BBL</button>
+            <button class="btn btn-ghost" onclick="exportPDF('fracktanks')">📄 PDF</button>
+          </div>
+          <details style="margin-top:10px;background:rgba(255,255,255,0.03);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.06)"><summary style="cursor:pointer;font-weight:700;font-size:12px;color:var(--oil-400)">📓 Tabla de aforo Global Verde 500 BBL (cm → bbl)</summary><div id="ft-strapping" style="font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;color:var(--muted);margin-top:8px;max-height:160px;overflow:auto"></div></details>
+        </div>
+        <div class="result-panel glass" id="res-fracktanks"><div class="result-empty">Ingresa nivel (cm) y presiona Calcular.<br>Verás <b>bbl actuales, cm libres, bbl libres y transferidos</b> automático.</div></div>
       </div>
     </section>
 
