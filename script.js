@@ -622,8 +622,16 @@ function calcMixFluids(){
 function toggleRetortType(){
   const t=$('rt-type').value;
   const isOBM = t==='obm';
-  $('field-owr').style.display = isOBM ? 'block' : 'none';
+  const oilField=$('field-oil'), owrField=$('field-owr');
+  if(oilField) oilField.style.display = isOBM ? 'block' : 'none';
+  if(owrField) owrField.style.display = isOBM ? 'block' : 'none';
+  // deshabilitar inputs para no confundir validación
   $('rt-oil-d').disabled = !isOBM;
+  $('rt-owr-oil').disabled = !isOBM;
+  $('rt-owr-water').disabled = !isOBM;
+  // animación suave
+  if(oilField) oilField.style.opacity = isOBM ? '1' : '0.45';
+  if(owrField) owrField.style.opacity = isOBM ? '1' : '0.45';
 }
 function toggleRetortSG(){
   const v=$('rt-mat').value;
@@ -867,6 +875,11 @@ initTheme();
 setSystem(globalSystem);
 updateHistoryBadge();
 renderHistory();
+// inicializar visibilidad condicional WBM/OBM y SG personalizado
+try{ toggleRetortType(); }catch(e){}
+try{ toggleRetortSG(); }catch(e){}
+try{ toggleCustomSG(); }catch(e){}
+try{ togglePumpType(); }catch(e){}
 const savedUser=localStorage.getItem('mud_user'); if(savedUser) $('userName').value=savedUser;
 
 // Exponer globales para onclick
