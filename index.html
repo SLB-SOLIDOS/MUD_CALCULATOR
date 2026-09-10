@@ -475,15 +475,18 @@
             <div class="field"><label>Altura total útil (cm)</label><input id="ft-h" type="number" placeholder="285" value="285" step="any"></div>
           </div>
           <div class="field" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.18);padding:10px;border-radius:10px">
-            <label style="color:#4ADE80">📏 Medición actual en campo</label>
+            <label style="color:#4ADE80">📏 Medición en campo — ¡por ESPACIO LIBRE! (vacío arriba)</label>
             <div class="field"><label>Altura total del tanque (cm)</label><input id="ft-height" type="number" placeholder="285" value="285" step="any"></div>
-            <div class="field"><label>Nivel actual de fluido (cm) — desde fondo</label><input id="ft-level" type="number" placeholder="Ej. 180" step="any"></div>
-            <div class="field"><label>¿Qué quieres calcular?</label><select id="ft-mode" onchange="toggleFrackMode()"><option value="stock">Solo Stock — cuánto tengo y cuánto libre</option><option value="transfer">Transferencia — cm antes y después</option><option value="need">Necesito agregar — barriles requeridos</option></select></div>
+            <div class="field"><label>Espacio LIBRE medido (cm) — desde espejo del fluido hasta el borde superior</label><input id="ft-free" type="number" placeholder="Ej. 105 (si mides 105 cm vacíos)" step="any"></div>
+            <div class="field"><label style="font-size:10px;color:var(--muted)">O si prefieres por nivel (opcional): Nivel de fluido desde fondo (cm)</label><input id="ft-level" type="number" placeholder="Deja vacío si usas espacio libre" step="any"></div>
+            <div class="field"><label>¿Qué quieres calcular?</label><select id="ft-mode" onchange="toggleFrackMode()"><option value="stock">Solo Stock — cuánto tengo y cuánto libre</option><option value="transfer">Transferencia — por espacio libre antes/después</option><option value="need">Necesito agregar — barriles requeridos</option></select></div>
           </div>
           <div id="ft-transfer-fields" style="display:none">
-            <div class="field"><label>Nivel ANTES de transferir (cm)</label><input id="ft-before" type="number" placeholder="Ej. 220" step="any"></div>
-            <div class="field"><label>Nivel DESPUÉS de transferir (cm)</label><input id="ft-after" type="number" placeholder="Ej. 140" step="any"></div>
-            <div class="field"><label>O centímetros transferidos (cm) — alternativa</label><input id="ft-cm-trans" type="number" placeholder="Ej. 80" step="any"></div>
+            <div class="field"><label>Espacio LIBRE ANTES (cm) — vacío arriba antes</label><input id="ft-free-before" type="number" placeholder="Ej. 65" step="any"></div>
+            <div class="field"><label>Espacio LIBRE DESPUÉS (cm) — vacío arriba después</label><input id="ft-free-after" type="number" placeholder="Ej. 145" step="any"></div>
+            <div class="field"><label>O por nivel (opcional): Nivel ANTES (cm)</label><input id="ft-before" type="number" placeholder="Deja vacío si usas libre" step="any"></div>
+            <div class="field"><label>Nivel DESPUÉS (cm)</label><input id="ft-after" type="number" placeholder="Ej. 140" step="any"></div>
+            <div class="field"><label>O centímetros transferidos directos (cm)</label><input id="ft-cm-trans" type="number" placeholder="Ej. 80" step="any"></div>
           </div>
           <div id="ft-need-fields" style="display:none">
             <div class="field"><label>Barriles que necesitas agregar (bbl)</label><input id="ft-need-bbl" type="number" placeholder="Ej. 120" step="any"></div>

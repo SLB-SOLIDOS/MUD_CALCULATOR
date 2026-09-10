@@ -708,21 +708,26 @@ function calcSolidsRetort(){
       customHGSVol = 0;
     }
     let lgsVol = 0, hgsVol=0, baritePct=0, caco3Pct=0;
-    const hasManualHGS = (baritePPB!==null && baritePPB>0) || (caco3PPB!==null && caco3PPB>0);
-    if(hasManualHGS){
-      // Volúmenes aportados por densificantes ingresados
+    const hasManualBarite = baritePPB!==null && baritePPB>0;
+    const hasManualCaco3 = caco3PPB!==null && caco3PPB>0;
+    const hasManualDens = hasManualBarite || hasManualCaco3;
+    if(hasManualDens){
       baritePct = bariteVol*100; caco3Pct = caco3Vol*100;
-      const sumHGSmanual = bariteVol + caco3Vol;
-      if(sumHGSmanual > solidsFrac+0.001) throw new Error(`Sólidos totales ${fmt(solidsPct,1)}% insuficientes para contener barita ${fmt(baritePct,1)}% + CaCO₃ ${fmt(caco3Pct,1)}% — revisa MW o cantidades`);
-      hgsVol = sumHGSmanual;
-      // Si solo uno de los dos fue ingresado y el otro no, el resto de sólidos es LGS + HGS restante según material principal
-      // Para mostrar concordancia: HGS total = manual, LGS = resto
-      lgsVol = solidsFrac - hgsVol;
-      if(lgsVol<0) lgsVol=0;
-      htmlExtra += `<br>🧱 Barita ${fmt(baritePPB||0,1)} lb/bbl → ${fmt(baritePct,2)}% vol | CaCO₃ ${fmt(caco3PPB||0,1)} lb/bbl → ${fmt(caco3Pct,2)}% vol`;
+      const totalDensVol = bariteVol + caco3Vol;
+      if(totalDensVol > solidsFrac+0.001) throw new Error(`Sólidos ${fmt(solidsPct,1)}% insuficientes para barita ${fmt(baritePct,1)}% + CaCO₃ ${fmt(caco3Pct,1)}% — revisa MW o cantidades`);
+      // LÓGICA CORRECTA: Barita = HGS (SG 4.2), Carbonato = NO es HGS, es LGS/MGS (SG 2.7)
+      hgsVol = bariteVol; // solo barita es HGS
+      lgsVol = solidsFrac - hgsVol; // LGS incluye arcilla + carbonato
+      // validar que carbonato quepa en LGS
+      if(caco3Vol > lgsVol+0.001) throw new Error(`Carbonato ${fmt(caco3Pct,1)}% excede LGS disponible ${fmt(lgsVol*100,1)}%`);
+      htmlExtra += `<br>🧱 Barita ${fmt(baritePPB||0,1)} lb/bbl → <b>HGS ${fmt(baritePct,2)}% vol</b> | CaCO₃ ${fmt(caco3PPB||0,1)} lb/bbl → <b>LGS ${fmt(caco3Pct,2)}% vol (no HGS)</b>`;
     } else {
-      // Estimación automática
-      if(mat==='lgs'){
+      // Automático: Carbonato NO genera HGS
+      if(mat==='calcium' || mat==='lgs'){
+        // Todo es LGS (carbonato es puenteo, SG 2.7, no es HGS)
+        lgsVol = solidsFrac; hgsVol=0;
+      } else if(mat==='custom' && sgSolidsAvg < 3.0){
+        // SG bajo = no es HGS
         lgsVol = solidsFrac; hgsVol=0;
       } else {
         const baseLGS = Math.min(0.06, solidsFrac*0.35);
@@ -731,7 +736,8 @@ function calcSolidsRetort(){
       }
     }
     const lgsPct = lgsVol*100, hgsPct = hgsVol*100;
-    const hgsLabel = hasManualHGS ? (baritePPB>0 && caco3PPB>0 ? `HGS mezcla (Barita+CaCO₃)` : baritePPB>0 ? `HGS Barita (SG 4.2)` : `HGS CaCO₃ (SG 2.7)`) : `HGS (SG ${fmt(sgSolidsAvg,2)})`;
+    const hgsLabel = hasManualDens ? (hasManualBarite ? `HGS Barita (SG 4.2)` : `HGS 0% — sin barita (CaCO₃ es LGS)`) : (mat==='calcium' ? `HGS 0% — Carbonato es LGS` : mat==='lgs' ? `HGS 0%` : `HGS (SG ${fmt(sgSolidsAvg,2)})`);
+    const lgsSmall = hasManualCaco3 ? `LGS incl. CaCO₃ ${fmt(caco3Pct,1)}%` : `LGS (SG ${fmt(lgsSG,2)})`;
     // Sólidos totales en retorta de 50ml = solidsPct*0.5 ml? Pero mostramos %
     const retortSolidsMl = solidsPct*0.5; // 50ml * %
     const html=`
@@ -745,12 +751,12 @@ function calcSolidsRetort(){
         <div class="result-item"><strong>${fmt(retortSolidsMl,1)} ml</strong><small>en retorta 50 ml</small></div>
       </div>
       <div class="result-grid">
-        <div class="result-item"><strong>${fmt(lgsPct,1)}%</strong><small>LGS (SG ${fmt(lgsSG,2)})</small></div>
+        <div class="result-item"><strong>${fmt(lgsPct,1)}%</strong><small>${lgsSmall}</small></div>
         <div class="result-item"><strong>${fmt(hgsPct,1)}%</strong><small>${hgsLabel}</small></div>
         <div class="result-item"><strong>${fmt(solidsPpg,1)} ppg</strong><small>Dens. sólido</small></div>
         <div class="result-item"><strong>${fmt(mwPpg/8.33,3)} SG</strong><small>SG lodo</small></div>
       </div>
-      ${hasManualHGS ? `<div class="formula-box" style="margin-top:8px;background:rgba(0,229,204,0.08);border-color:rgba(0,229,204,0.18)">🧱 Validación densificantes: Barita ${fmt(baritePct,2)}% vol (${fmt(baritePPB||0,1)} lb/bbl) + CaCO₃ ${fmt(caco3Pct,2)}% vol (${fmt(caco3PPB||0,1)} lb/bbl) = HGS total ${fmt(hgsPct,1)}% — concordante con MW ${fmt(mwPpg,2)} ppg</div>` : ''}
+      ${hasManualBarite || hasManualCaco3 ? `<div class="formula-box" style="margin-top:8px;background:rgba(0,229,204,0.08);border-color:rgba(0,229,204,0.18)">🧱 Validación: HGS (barita) ${fmt(baritePct,2)}% vol (${fmt(baritePPB||0,1)} lb/bbl) | LGS-CaCO₃ ${fmt(caco3Pct,2)}% vol (${fmt(caco3PPB||0,1)} lb/bbl) → HGS total ${fmt(hgsPct,1)}% — lógico: carbonato NUNCA es HGS</div>` : ''}
       <div class="formula-box">${htmlExtra} = <b>${fmt(solidsPct,1)}% sólidos</b><br>
       Balance: MW = aceite·${fmt(oilPct,1)}% + agua·${fmt(waterPct,1)}% + sólidos·${fmt(solidsPct,1)}%<br>
       Retorta 50 ml esperada: Aceite ${fmt(oilPct*0.5,1)} ml + Agua ${fmt(waterPct*0.5,1)} ml + Sólidos ${fmt(retortSolidsMl,1)} ml<br>
@@ -811,12 +817,23 @@ function generateFrackStrap(){
 function calcFrackTanks(){
   try{
     const {factor, capacity, height, name} = getFrackFactor();
-    const level=val('ft-level');
+    // Medición por ESPACIO LIBRE (vacío arriba) — prioridad, como mide el operador en campo con cinta desde el borde
+    const freeInput=val('ft-free'), levelInput=val('ft-level');
+    let level = null;
+    let freeCmInput = null;
+    if(freeInput!==null){
+      if(freeInput<0 || freeInput>height) throw new Error(`Espacio libre debe estar 0-${height} cm`);
+      level = height - freeInput;
+      freeCmInput = freeInput;
+    } else if(levelInput!==null){
+      if(levelInput<0 || levelInput>height) throw new Error(`Nivel debe estar 0-${height} cm`);
+      level = levelInput;
+      freeCmInput = height - level;
+    }
     const count=Math.max(1, val('ft-count')||1);
-    if(level!==null && (level<0 || level>height)) throw new Error(`Nivel debe estar 0-${height} cm`);
     const mode=$('ft-mode').value;
     let html='', resumen='';
-    // Datos base stock
+    // Datos base stock (siempre con nivel derivado del espacio libre)
     let currentBbl = level!==null ? level*factor : 0;
     let freeCm = level!==null ? height - level : height;
     let freeBbl = freeCm*factor;
@@ -832,11 +849,11 @@ function calcFrackTanks(){
       freeCm = height - level; // cm libre igual
     }
     if(mode==='stock'){
-      requirePos(level,'Nivel actual');
+      if(level===null) throw new Error('Ingresa Espacio LIBRE (cm) o Nivel de fluido');
       html=`
         <div class="result-title">Stock — ${name} x${count}</div>
         <div class="result-big"><span>${fmt(currentBbl*count,1)}</span> bbl</div>
-        <div class="result-sub">Nivel ${fmt(level,1)} cm / ${fmt(height,0)} cm (${fmt(pct,1)}% lleno) — Factor ${fmt(factor,3)} bbl/cm${correctionNote}</div>
+        <div class="result-sub">${freeInput!==null ? `Medido por <b>espacio libre ${fmt(freeInput,1)} cm</b> → Nivel ${fmt(level,1)} cm` : `Nivel ${fmt(level,1)} cm`} / ${fmt(height,0)} cm (${fmt(pct,1)}% lleno) — Factor ${fmt(factor,3)} bbl/cm${correctionNote}</div>
         <div class="result-grid">
           <div class="result-item"><strong>${fmt(currentBbl,1)} bbl</strong><small>Por tanque</small></div>
           <div class="result-item"><strong>${fmt(currentBbl*158.987,0)} L</strong><small>Litros/tanque</small></div>
@@ -854,13 +871,19 @@ function calcFrackTanks(){
         Para ${count} tanque(s): Stock total ${fmt(currentBbl*count,1)} bbl, Libre total ${fmt(freeBbl*count,1)} bbl</div>`;
       resumen=`${fmt(currentBbl,1)} bbl (${fmt(pct,1)}%) | Libres ${fmt(freeBbl,1)} bbl (${fmt(freeCm,0)} cm)`;
     } else if(mode==='transfer'){
-      const before=val('ft-before'), after=val('ft-after'), cmTrans=val('ft-cm-trans');
+      const freeBefore=val('ft-free-before'), freeAfter=val('ft-free-after');
+      let before=val('ft-before'), after=val('ft-after');
+      // si dio espacio libre, convertir a nivel
+      if(freeBefore!==null) before = height - freeBefore;
+      if(freeAfter!==null) after = height - freeAfter;
+      const cmTrans=val('ft-cm-trans');
       let cmDiff=0;
       if(cmTrans!==null && cmTrans>0) cmDiff=cmTrans;
       else {
         requirePos(before,'Nivel ANTES'); requirePos(after,'Nivel DESPUÉS');
+        // validar usando espacio libre si fue el input original
         cmDiff = before - after;
-        if(cmDiff<=0) throw new Error('ANTES debe ser mayor que DESPUÉS (descenso)');
+        if(cmDiff<=0) throw new Error('ANTES debe ser mayor que DESPUÉS (descenso) — con espacio libre: ANTES vacío debe ser MENOR que DESPUÉS vacío');
       }
       const bblTrans = cmDiff*factor;
       // corrección si before o after en fondo curvo
